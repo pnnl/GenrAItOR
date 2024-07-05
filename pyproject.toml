@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "genraitor"
+version = "0.1.0"
+readme = "README.md"
+keywords = [
+	"omics",
+	"disease prediction",
+	"DeepIMV",
+	"Llama3",
+	"metabolomics",
+	"data harmonization",
+	"RAG",
+	"RAFT",
+	"pathogens",
+	"macromolecules",
+]
+description = "Predicts most important features for disease prediction using omics sampling and Llama3 fine-tuning"
+authors = [{ name = "Matt Jensen", email = "matt.jensen@pnnl.gov" }]
+dependencies = [
+	"torch >= 2.0.0",
+	"trl >=0.9.4",
+	"transformers >= 4.42.3",
+	"peft >= 0.11.1",
+	"datasets >= 2.20.0",
+	"click >= 8.1.7",
+	"setuptools >= 70.2.0",
+	"bitsandbytes >= 0.42.0",
+]
+
+[tool.setuptools]
+packages = ["genraitor"]
