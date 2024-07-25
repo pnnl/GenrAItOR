@@ -1,0 +1,12 @@
+name: raft
+  - conda-forge
+dependencies:
+  - python=3.12
+  - isort
+  - pip
+  - tqdm
+  - pip:
+    - llama-index
+    - llama-index-packs-raft-dataset
+    - openai
+    - metapub
