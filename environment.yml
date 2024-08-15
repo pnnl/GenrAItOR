@@ -11,6 +11,7 @@ dependencies:
     - llama-index-llms-huggingface
     - llama-index-llms-azure-openai
     - llama-index-embeddings-azure-openai
+    - llama-index-embeddings-huggingface
     - torch
     - transformers==4.43.4
     - openai

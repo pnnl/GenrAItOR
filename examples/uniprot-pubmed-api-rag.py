@@ -91,7 +91,7 @@ def fetch_abstracts(query_results, cache_dir = "~/.cache/metapub"):
     
     return all_abstracts, all_pmids
 
-def fetch_context(uniprots, secondary_context = False, **kwargs):
+def fetch_context(uniprots, secondary_context = False, max_characters=16_000, **kwargs):
     """Fetch context information for a list of uniprot accession numbers.
 
     Args:
@@ -110,7 +110,7 @@ def fetch_context(uniprots, secondary_context = False, **kwargs):
 
     # For each query result
     for up, qr in zip(uniprots, query_results):
-        abstract_context = "ABSTRACTS:\n\n"
+        abstract_context = "ABSTRACTS:\n\n<DOCUMENT>\n"
         interaction_context = "INTERACTIONS:\n\n"
 
         # only keep information from the direct hit of the query
@@ -121,7 +121,12 @@ def fetch_context(uniprots, secondary_context = False, **kwargs):
         interactions = extract_interactions(qr)
 
         for a in abstracts:
-            abstract_context += a + "\n\n"
+            if (len(abstract_context) + len(a)) > max_characters:
+                break
+            abstract_context += a + "<\DOCUMENT>\n\n<DOCUMENT>\n"
+
+        # strip the trailing <DOCUMENT> tag
+        abstract_context = abstract_context[:-len("<DOCUMENT>\n")]
 
         for i in interactions:
             interaction_context += json.dumps(i) + "\n\n"
@@ -175,7 +180,7 @@ def main():
         Step-by-step answer: \
         """
         )
-
+    
     if args.query_file:
         with open(args.query_file) as f:
             query_str = f.read()
