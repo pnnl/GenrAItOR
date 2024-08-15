@@ -128,9 +128,10 @@ def fetch_context(uniprots, secondary_context = False, max_characters=16_000, **
 
     # For each query result
     for up, qr in zip(uniprots, query_results):
-        abstract_context = "ABSTRACTS:\n\n<DOCUMENT>\n"
-        interaction_context = "INTERACTIONS:\n\n"
-        pathway_context = "PATHWAYS:\n\n"
+        logging.info(f"Retrieval context for uniprot id {up}")
+        abstract_context = []
+        interaction_context = []
+        pathway_context = []
 
         # only keep information from the direct hit of the query
         if not secondary_context:
@@ -140,21 +141,21 @@ def fetch_context(uniprots, secondary_context = False, max_characters=16_000, **
         interactions = extract_interactions(qr)
         pathways = extract_pathways(qr)
 
+        abstract_len = 0
+
         for a in abstracts:
             if a is None:
                 continue
-            if (len(abstract_context) + len(a)) > max_characters:
+            if (abstract_len + len(a)) > max_characters:
                 break
-            abstract_context += a + "<\DOCUMENT>\n\n<DOCUMENT>\n"
-
-        # strip the trailing <DOCUMENT> tag
-        abstract_context = abstract_context[:-len("<DOCUMENT>\n")]
+            abstract_len += len(a)
+            abstract_context.append(a)
 
         for i in interactions:
-            interaction_context += json.dumps(i) + "\n\n"
+            interaction_context.append(json.dumps(i))
 
         for p in pathways:
-            pathway_context += json.dumps(p) + "\n\n"
+            pathway_context.append(json.dumps(p))
 
         all_abstract_context.append(abstract_context)
         all_interaction_context.append(interaction_context)
