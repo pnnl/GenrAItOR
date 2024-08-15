@@ -31,6 +31,28 @@ def extract_interactions(query_results):
     
     return all_interactions
 
+def extract_pathways(query_results, databases = ['Reactome']):
+    """Extract the pathway information from the results of a uniprot query.
+
+    Args:
+        query_results (List): A list of dictionaries containing the results of a single uniprot query from `fetch_uniprot`.
+        databases (List[str]): A list of database names returned by the uniprot api from which to retrieve pathway information from.
+    Returns:
+        List: A list of dictionaries containing all pathway information from all query results.
+    """
+    all_pathways = []
+
+    for qr in query_results:
+        if 'uniProtKBCrossReferences' in qr:
+            for xref in qr['uniProtKBCrossReferences']:
+                if xref['database'] in databases:
+                    tmp_xref = xref.copy()
+                    tmp_xref['properties'] = [p for p in tmp_xref['properties'] if len(p['value']) > 1]
+                    tmp_xref = {k:v for k,v in tmp_xref.items() if k != 'database'}
+                    all_pathways.append(tmp_xref)
+    
+    return all_pathways
+
 def fetch_uniprot(uniprots, headers = DEFAULT_HEADERS, payload = {}, query_body=DEFAULT_QUERY):
     """Fetch uniprot information for a list of uniprot ids using the uniprot REST API.
 
@@ -102,11 +124,13 @@ def fetch_context(uniprots, secondary_context = False, max_characters=16_000, **
 
     all_abstract_context = []
     all_interaction_context = []
+    all_pathway_context = []
 
     # For each query result
     for up, qr in zip(uniprots, query_results):
         abstract_context = "ABSTRACTS:\n\n<DOCUMENT>\n"
         interaction_context = "INTERACTIONS:\n\n"
+        pathway_context = "PATHWAYS:\n\n"
 
         # only keep information from the direct hit of the query
         if not secondary_context:
@@ -114,8 +138,11 @@ def fetch_context(uniprots, secondary_context = False, max_characters=16_000, **
 
         abstracts, _ = fetch_abstracts(qr)
         interactions = extract_interactions(qr)
+        pathways = extract_pathways(qr)
 
         for a in abstracts:
+            if a is None:
+                continue
             if (len(abstract_context) + len(a)) > max_characters:
                 break
             abstract_context += a + "<\DOCUMENT>\n\n<DOCUMENT>\n"
@@ -126,7 +153,11 @@ def fetch_context(uniprots, secondary_context = False, max_characters=16_000, **
         for i in interactions:
             interaction_context += json.dumps(i) + "\n\n"
 
+        for p in pathways:
+            pathway_context += json.dumps(p) + "\n\n"
+
         all_abstract_context.append(abstract_context)
         all_interaction_context.append(interaction_context)
+        all_pathway_context.append(pathway_context)
 
-    return all_abstract_context, all_interaction_context
+    return all_abstract_context, all_interaction_context, all_pathway_context
