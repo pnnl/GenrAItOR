@@ -53,6 +53,25 @@ def extract_pathways(query_results, databases = ['Reactome']):
     
     return all_pathways
 
+def extract_subunit(query_results):
+    """
+    Args:
+        query_results (List): A list of dictionaries containing the results of a single uniprot query from `fetch_uniprot`.
+    Returns:
+        List: A list of texts describing interactions for each query result.
+    """
+    all_comments = []
+
+    for qr in query_results:
+        if 'comments' in qr:
+            for c in qr['comments']:
+                if c['commentType'] == 'SUBUNIT':
+                    for txt in c['texts']:
+                        all_comments.append(txt['value'])
+
+    return all_comments
+                    
+
 def fetch_uniprot(uniprots, headers = DEFAULT_HEADERS, payload = {}, query_body=DEFAULT_QUERY):
     """Fetch uniprot information for a list of uniprot ids using the uniprot REST API.
 
@@ -114,6 +133,7 @@ def fetch_context(uniprots, secondary_context = False, max_characters=16_000, **
     Args:
         uniprots (List[str]): A list of uniprot accession numbers to query.
         secondary_context (bool, optional): Whether to fetch results of secondary search results. Defaults to False.
+        max_characters (int, optional):  Limit on the number of characters in the abstract information to return.  Defaults to 16_000.
         **kwargs: Additional keyword arguments to pass to the fetch_uniprot function.
 
     Returns:
@@ -125,10 +145,11 @@ def fetch_context(uniprots, secondary_context = False, max_characters=16_000, **
     all_abstract_context = []
     all_interaction_context = []
     all_pathway_context = []
+    all_subunit_context = []
 
     # For each query result
     for up, qr in zip(uniprots, query_results):
-        logging.info(f"Retrieval context for uniprot id {up}")
+        logging.info(f"Retrieving context for uniprot id {up}")
         abstract_context = []
         interaction_context = []
         pathway_context = []
@@ -139,6 +160,7 @@ def fetch_context(uniprots, secondary_context = False, max_characters=16_000, **
 
         abstracts, _ = fetch_abstracts(qr)
         interactions = extract_interactions(qr)
+        interaction_texts = extract_subunit(qr)
         pathways = extract_pathways(qr)
 
         abstract_len = 0
@@ -160,5 +182,6 @@ def fetch_context(uniprots, secondary_context = False, max_characters=16_000, **
         all_abstract_context.append(abstract_context)
         all_interaction_context.append(interaction_context)
         all_pathway_context.append(pathway_context)
+        all_subunit_context.append(interaction_texts)
 
-    return all_abstract_context, all_interaction_context, all_pathway_context
+    return all_abstract_context, all_interaction_context, all_pathway_context, all_subunit_context
