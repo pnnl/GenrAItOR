@@ -69,7 +69,7 @@ def fetch_uniprot(uniprots, headers = DEFAULT_HEADERS, payload = {}, query_body=
 
     for uniprot in uniprots:
 
-        url = f"https://rest.uniprot.org/uniprotkb/search?query={DEFAULT_QUERY.format(uniprot=uniprot)}"
+        url = f"https://rest.uniprot.org/uniprotkb/search?query={query_body.format(uniprot=uniprot)}"
 
         r = requests.request("GET", url, headers=headers, data=payload)
         
