@@ -36,7 +36,9 @@ def init():
     "--adapter_path",
     "adapter_path",
     required=True,
+    default=Path(env.paths.data) / "finetuned",
     type=click.Path(file_okay=False, path_type=Path, exists=True),
+    show_default=True,
 )
 @click.option(
     "-b",
@@ -44,12 +46,14 @@ def init():
     "--base",
     "base_model",
     default=env.model.name,
+    show_default=True,
 )
 @click.option(
     "--raft_path",
     required=True,
     default=Path(env.paths.data) / "training" / "raft_outputs" / "raw.jsonl",
-    type=click.Path(dir_okay=False, exists=True, path_type=Path),
+    type=click.Path(exists=True, path_type=Path),
+    show_default=True,
 )
 @click.option(
     "--save_path",
@@ -62,13 +66,27 @@ def evaluate(adapter_path, base_model, raft_path, save_path, batch_size):
 
     from ..evaluate import align
 
-    with duckdb.connect(":memory:") as conn:
-        data = conn.sql(f"""
-            SELECT
-                context || instruction || question as context
-                ,cot_answer as claim
-            FROM read_json("{raft_path}")
-        """).to_df()
+    match raft_path.suffix:
+        case ".hf":
+            import pandas as pd
+            from datasets import load_from_disk
+            data = pd.DataFrame(load_from_disk(raft_path).to_dict())
+            with duckdb.connect(":memory:") as conn:
+                data = conn.sql("""
+                    SELECT
+                        instruction as context
+                        ,cot_answer as claim
+                    FROM data
+                """).to_df()
+        case _:
+            with duckdb.connect(":memory:") as conn:
+                data = conn.sql(f"""
+                    SELECT
+                        context || instruction || question as context
+                        ,cot_answer as claim
+                    FROM read_json("{raft_path}")
+                """).to_df()
+
 
     tokenizer, model = train.load(
         adapter_path=adapter_path,
