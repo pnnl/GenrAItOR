@@ -19,9 +19,9 @@ def evaluate(tokenizer, model, data, batch_size = 15) -> pd.DataFrame:
     )
     log.info(f"eval {len(data)} records")
     results = []
-    for _, row in data.iterrows():
-        claims = [row["claim"]]
-        contexts = [row["context"]]
+    for chunk in batch_dataframe(data, batch_size):
+        claims = chunk["claim"].to_list()
+        contexts = chunk["context"].to_list()
 
         inputs = tokenizer(contexts, return_tensors="pt", padding=True)
         ids = inputs["input_ids"].to(device)
@@ -45,3 +45,19 @@ def evaluate(tokenizer, model, data, batch_size = 15) -> pd.DataFrame:
         results.append(eval_scores)
 
     return pd.concat(results)
+
+def batch_dataframe(df, n):
+    """
+    Splits a dataframe into chunks of size n.
+
+    :param df: The input dataframe
+    :param n: The size of each chunk
+    :return: A list of dataframes, each of size n (last one might be smaller)
+    """
+    # Determine the number of chunks
+    num_chunks = len(df) // n + (1 if len(df) % n != 0 else 0)
+
+    # Split the dataframe into chunks
+    chunks = [df.iloc[i * n:(i + 1) * n] for i in range(num_chunks)]
+
+    return chunks
