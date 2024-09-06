@@ -7,13 +7,14 @@ from ..conf import env, log
 
 
 def evaluate(tokenizer, model, data, batch_size = 15) -> pd.DataFrame:
+    import torch
 
     tokenizer.pad_token = tokenizer.eos_token
     device = model.device
     scorer = AlignScore(
         model="roberta-base",
         batch_size=32,
-        device=device,
+        device="cpu",
         ckpt_path=str(Path(env.paths.app) / "data/alignscore/AlignScore-base.ckpt"),
         evaluation_mode="nli_sp",
     )
@@ -25,9 +26,13 @@ def evaluate(tokenizer, model, data, batch_size = 15) -> pd.DataFrame:
 
         inputs = tokenizer(contexts, return_tensors="pt", padding=True)
         ids = inputs["input_ids"].to(device)
+        del inputs
 
-        outputs = model.generate(input_ids=ids, max_new_tokens=150, pad_token_id=tokenizer.pad_token_id)
+        with torch.no_grad():
+            outputs = model.generate(input_ids=ids, max_new_tokens=150, pad_token_id=tokenizer.pad_token_id)
+        del ids
         pred_claims = tokenizer.batch_decode(outputs.detach().cpu().numpy(), skip_special_tokens=True)
+        del outputs
 
 
         scores = scorer.score(contexts=contexts, claims=pred_claims)
