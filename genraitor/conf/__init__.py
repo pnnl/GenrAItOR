@@ -1,13 +1,19 @@
 from typing import Optional
 
 import structlog
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, Extra
 from pydantic_settings import BaseSettings
 
 
 class VendorConfig(BaseModel):
     hf_token: str = Field(alias="HF_TOKEN")
-    ncbi_api_key: str = Field(alias="NCBI_API_KEY")
+    ncbi_api_key: Optional[str] = Field(None, alias="NCBI_API_KEY")
+    path: str = Field(alias="PATH")
+    ld_library_path: str = Field(alias="LD_LIBRARY_PATH")
+    pytorch_cuda_alloc_conf: str = Field(alias="PYTORCH_CUDA_ALLOC_CONF")
+    class Config:
+        extra = Extra.allow
+
 
 class PathConfig(BaseModel):
     app: str = "/path/to/repo"
