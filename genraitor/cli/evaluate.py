@@ -7,7 +7,7 @@ import duckdb
 import pandas as pd
 
 from ..conf import env
-from ..raft import tune
+from ..raft import train
 
 
 @click.group()
@@ -19,10 +19,10 @@ def cli():
 @cli.command("eval:init")
 def init():
     """Install nltk dependencies."""
+    import ssl
+
     import nltk
 
-    import ssl
-    
     try:
         _create_unverified_https_context = ssl._create_unverified_context
     except AttributeError:
@@ -72,7 +72,7 @@ def evaluate(adapter_path, base_model, raft_path, save_path, batch_size):
     contexts = data["context"].to_list()[:batch_size]
 
 
-    tokenizer, model = tune.load(
+    tokenizer, model = train.load(
         adapter_path=adapter_path,
         base_model=base_model,
     )

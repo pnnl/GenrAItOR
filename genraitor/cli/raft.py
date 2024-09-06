@@ -1,51 +1,16 @@
 """."""
+
 from pathlib import Path
 
 import click
 
 from ..conf import env, log
-from ..raft.strategies import TrainingStrategy
 
 
 @click.group()
 def cli():
     """."""
     pass
-
-
-@cli.command("raft:tune")
-@click.option(
-    "-t",
-    "--training_path",
-    "training_path",
-    required=True,
-    default=Path(env.paths.data) / "training_dataset.jsonl",
-    type=click.Path(dir_okay=False, path_type=Path, exists=True),
-)
-@click.option(
-    "-m", "--model_name", "--model", default="meta-llama/Meta-Llama-3-8B", help="HF model to use as the base",
-)
-@click.option("-n", "--output_name", default="data/finetuned", help="Output path for the adapter weights.")
-@click.option(
-    "-",
-    "--strategy",
-    default="sft",
-    type=click.Choice(TrainingStrategy.list()),
-    show_choices=True,
-    show_default=True,
-    help="TRL trainer to use",
-)
-def tune(training_path, model_name, output_name, strategy):
-    """Tune llm using generated raft dataset."""
-    from ..raft import tune
-
-    strategy = TrainingStrategy.from_str(strategy)
-    tune.main(
-        training_path=training_path,
-        base_model=model_name,
-        new_model=output_name,
-        strategy=strategy,
-    )
 
 
 @cli.command("raft:merge")
@@ -66,16 +31,15 @@ def tune(training_path, model_name, output_name, strategy):
 @click.option("-o", "--output_path", "--save_path", "save_path", default="genraitor")
 def merge(adapter_path, base_model, save_path):
     """Merge the trained model with the base model."""
-    from ..raft import tune
+    from ..raft import train
 
-    model = tune.load(
+    model = train.load(
         adapter_path=adapter_path,
         base_model=base_model,
     )
     log.info("saving merged")
     model.save_pretrained(save_path)
     log.info(f"saved: {save_path}")
-
 
 
 @cli.command("raft:data")

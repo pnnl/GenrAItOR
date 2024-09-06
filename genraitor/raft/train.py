@@ -46,6 +46,8 @@ def main(
     strategy: TrainingStrategy = TrainingStrategy.ORPO,
 ):
 
+    dataset = prepare_dataset(training_path)
+
     # Load tokenizer
     log.info(f"loading tokenizer: {base_model}")
     tokenizer = AutoTokenizer.from_pretrained(base_model)
@@ -63,9 +65,8 @@ def main(
     model, tokenizer = setup_chat_format(model, tokenizer)
     model = prepare_model_for_kbit_training(model)
 
-    dataset = prepare_dataset(training_path)
     log.info(f"configuring trainer: {strategy}")
-    _, trainer = _configure_trainer(strategy, model, tokenizer, dataset):
+    _, trainer = _configure_trainer(strategy, model, tokenizer, dataset)
     log.info("training model")
     trainer.train()
     log.info(f"saving model {new_model}")
@@ -155,16 +156,7 @@ def _configure_trainer(strategy, model, tokenizer, dataset):
 
 
 def prepare_dataset(training_path):
-    # file_path = training_path"training_dataset.jsonl"
     log.info(f"loading dataset {training_path}")
-    dataset = load_dataset(
-        "json", data_files={"train": str(training_path)}, split="all",
-    )
-    log.info("shuffling dataset")
-    dataset = dataset.shuffle(seed=42)
-
-    # Apply chat template with ORPO-specific formatting
-
     def format_chat_template(row):
         role = "You are an expert on multiomics and pathogen metobolic pathways"
         row["chosen"] = f'{role} {row["chosen"]}'
@@ -172,10 +164,34 @@ def prepare_dataset(training_path):
         row["role"] = role
         return row
 
-    log.info("mapping dataset")
-    dataset = dataset.map(
-        format_chat_template, num_proc=os.cpu_count() // 2, batched=False,
-    )
+    def format_instruction(row):
+        row["prompt"] = row["instruction"]
+        row["completion"] = row["cot_answer"]
+        return row
+
+    match training_path.suffix:
+        case ".hf":
+            from datasets import load_from_disk
+            dataset = load_from_disk(training_path)
+
+            log.info("mapping dataset")
+            dataset = dataset.rename_column("instruction", "prompt")
+            dataset = dataset.rename_column("cot_answer", "completion")
+
+        case _:
+
+            dataset = load_dataset(
+                "json", data_files={"train": str(training_path)}, split="all",
+            )
+
+            log.info("mapping dataset")
+            dataset = dataset.map(
+                format_chat_template, num_proc=os.cpu_count() // 2, batched=False,
+            )
+
+    log.info("shuffling dataset")
+    dataset = dataset.shuffle(seed=42)
+
 
     log.info("splitting dataset")
     dataset = dataset.train_test_split(test_size=0.01)

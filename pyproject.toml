@@ -24,8 +24,6 @@ dependencies = [
 	"setuptools >= 70.2.0",
 	"click >= 8.1.7",
 	"structlog >= 24.2.0",
-	"python-dotenv >= 1.0.1",
-	"python-configuration >= 0.11.0",
 	"torch >= 2.4.0",
 	"nvidia-cudnn-cu12 >= 8.0.0.0",
 	"trl >=0.9.4",
@@ -47,6 +45,8 @@ dependencies = [
 	"metapub >= 0.5.12",
 	"ruff>=0.6.1",
 	"alignscore",
+	"pydantic >= 2.9.0",
+	"pydantic-settings >= 2.4.0",
 ]
 
 [tool.setuptools]

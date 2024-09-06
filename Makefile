@@ -5,9 +5,9 @@ PYTHON=".venv/bin/python3"
 
 all:
 
-.PHONY: tune
-tune:
-	$(PYTHON) -m $(PROJECT) raft:tune \
+.PHONY: train
+train:
+	$(PYTHON) -m $(PROJECT) train:raft \
 		--model_name "$(BASE_MODEL)"\
 		--output_name data/finetuned
 
