@@ -5,7 +5,7 @@ import logging
 
 logging.basicConfig(level=logging.INFO)
 
-DEFAULT_QUERY = "reviewed:true+AND+{uniprot}&fields=lit_pubmed_id,cc_interaction,cc_subunit,gene_synonym"
+DEFAULT_QUERY = "reviewed:true+AND+{uniprot}&fields=lit_pubmed_id,cc_interaction,cc_subunit,gene_synonym,cc_pathway"
 DEFAULT_HEADERS = {
     'Accept': 'application/json',
     'Content-Type': 'application/json'
@@ -31,8 +31,26 @@ def extract_interactions(query_results):
     
     return all_interactions
 
-def extract_pathways(query_results, databases = ['Reactome']):
-    """Extract the pathway information from the results of a uniprot query.
+def extract_pathways_comments(query_results):
+    """Extract comments about pathway information obtained through the cc_pathways field in the uniprot api.
+        Args:
+            query_results (List): A list of dictionaries containing the results of a single uniprot query from `fetch_uniprot`.
+        Returns:
+            List: A list of dictionaries containing all pathway information from all query results.
+    """
+    all_comments = []
+
+    for qr in query_results:
+        if 'comments' in qr:
+            for c in qr['comments']:
+                if c['commentType'] == 'PATHWAY':
+                    for txt in c['texts']:
+                        all_comments.append(txt['value'])
+
+    return(all_comments)
+
+def extract_pathways_db(query_results, databases = ['Reactome']):
+    """Extract the pathway information from the results of a uniprot query.  The appropriate field must have been supplied to the uniprot query, e.g. 'xref_reactome' for the Reactome database.  See https://www.uniprot.org/help/return_fields_databases
 
     Args:
         query_results (List): A list of dictionaries containing the results of a single uniprot query from `fetch_uniprot`.
@@ -144,7 +162,8 @@ def fetch_context(uniprots, secondary_context = False, max_characters=16_000, **
 
     all_abstract_context = []
     all_interaction_context = []
-    all_pathway_context = []
+    all_pathway_db_context = []
+    all_pathway_info_context = []
     all_subunit_context = []
 
     # For each query result
@@ -152,7 +171,7 @@ def fetch_context(uniprots, secondary_context = False, max_characters=16_000, **
         logging.info(f"Retrieving context for uniprot id {up}")
         abstract_context = []
         interaction_context = []
-        pathway_context = []
+        pathway_db_context = []
 
         # only keep information from the direct hit of the query
         if not secondary_context:
@@ -161,7 +180,8 @@ def fetch_context(uniprots, secondary_context = False, max_characters=16_000, **
         abstracts, _ = fetch_abstracts(qr)
         interactions = extract_interactions(qr)
         interaction_texts = extract_subunit(qr)
-        pathways = extract_pathways(qr)
+        pathways_db = extract_pathways_db(qr)
+        pathway_info = extract_pathways_comments(qr)
 
         abstract_len = 0
 
@@ -176,12 +196,13 @@ def fetch_context(uniprots, secondary_context = False, max_characters=16_000, **
         for i in interactions:
             interaction_context.append(json.dumps(i))
 
-        for p in pathways:
-            pathway_context.append(json.dumps(p))
+        for p in pathways_db:
+            pathway_db_context.append(json.dumps(p))
 
         all_abstract_context.append(abstract_context)
         all_interaction_context.append(interaction_context)
-        all_pathway_context.append(pathway_context)
+        all_pathway_db_context.append(pathway_db_context)
         all_subunit_context.append(interaction_texts)
+        all_pathway_info_context.append(pathway_info)
 
-    return all_abstract_context, all_interaction_context, all_pathway_context, all_subunit_context
+    return all_abstract_context, all_interaction_context, all_pathway_db_context, all_subunit_context, all_pathway_info_context
