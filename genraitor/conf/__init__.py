@@ -23,7 +23,7 @@ class PathConfig(BaseModel):
 
 
 class ModelConfig(BaseModel):
-    name: str = "microsoft/Phi-3-mini-4k-instruct"
+    name: str = "meta-llama/Meta-Llama-3-8B"
     output_name: str = "genraitor"
     embed_name: str = "ollama"
     api_key: str = ""
