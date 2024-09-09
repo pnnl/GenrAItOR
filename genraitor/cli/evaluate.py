@@ -4,7 +4,7 @@ from pathlib import Path
 
 import click
 
-from ..conf import env
+from ..conf import env, log
 from ..raft import train
 
 
@@ -70,31 +70,38 @@ def evaluate(adapter_path, base_model, raft_path, save_path, batch_size):
         case ".hf":
             import pandas as pd
             from datasets import load_from_disk
+
             data = pd.DataFrame(load_from_disk(raft_path).to_dict())
             with duckdb.connect(":memory:") as conn:
-                data = conn.sql("""
+                data = conn.sql(
+                    """
                     SELECT
                         instruction as context
                         ,cot_answer as claim
                     FROM data
-                """).to_df()
+                """
+                ).to_df()
         case _:
             with duckdb.connect(":memory:") as conn:
-                data = conn.sql(f"""
+                data = conn.sql(
+                    f"""
                     SELECT
                         context || instruction || question as context
                         ,cot_answer as claim
                     FROM read_json("{raft_path}")
-                """).to_df()
-
+                """
+                ).to_df()
 
     tokenizer, model = train.load(
         adapter_path=adapter_path,
         base_model=base_model,
     )
     model.eval()
+    log.debug(model.get_memory_footprint())
 
-    result = align.evaluate(model=model, tokenizer=tokenizer, data=data, batch_size=batch_size)
+    result = align.evaluate(
+        model=model, tokenizer=tokenizer, data=data, batch_size=batch_size
+    )
     print(result.describe())
     if save_path is None:
         print(result.to_markdown(index=False))

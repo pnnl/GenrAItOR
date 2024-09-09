@@ -10,7 +10,10 @@ class VendorConfig(BaseModel):
     ncbi_api_key: Optional[str] = Field(None, alias="NCBI_API_KEY")
     path: Optional[str] = Field(None, alias="PATH")
     ld_library_path: Optional[str] = Field(None, alias="LD_LIBRARY_PATH")
-    pytorch_cuda_alloc_conf: Optional[str] = Field(None, alias="PYTORCH_CUDA_ALLOC_CONF")
+    pytorch_cuda_alloc_conf: Optional[str] = Field(
+        None, alias="PYTORCH_CUDA_ALLOC_CONF"
+    )
+
     class Config:
         extra = Extra.allow
 
@@ -27,6 +30,8 @@ class ModelConfig(BaseModel):
     output_name: str = "genraitor"
     embed_name: str = "ollama"
     api_key: str = ""
+    quantization_type: str = "fp4"  # or "nf4"
+    device_map: str = "auto"  # or "cuda"
 
 
 class TrainingConfig(BaseModel):

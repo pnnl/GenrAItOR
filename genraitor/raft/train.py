@@ -31,11 +31,30 @@ if torch.cuda.is_available() and torch.cuda.get_device_capability()[0] >= 8:
 else:
     torch_dtype = torch.float16
 
+# quantization config
 bnb_config = BitsAndBytesConfig(
     load_in_4bit=True,  # only works with GPU
-    bnb_4bit_quant_type="nf4",
+    bnb_4bit_quant_type=env.model.quantization_type,
     bnb_4bit_compute_dtype=torch_dtype,
     bnb_4bit_use_double_quant=True,
+)
+
+# LoRA config
+peft_config = LoraConfig(
+    r=16,
+    lora_alpha=32,
+    lora_dropout=0.05,
+    bias="none",
+    task_type="CAUSAL_LM",
+    target_modules=[
+        "up_proj",
+        "down_proj",
+        "gate_proj",
+        "k_proj",
+        "q_proj",
+        "v_proj",
+        "o_proj",
+    ],
 )
 
 
@@ -77,26 +96,9 @@ def main(
     gc.collect()
     torch.cuda.empty_cache()
 
+
 def _configure_trainer(strategy, model, tokenizer, dataset):
     # QLoRA config
-
-    # LoRA config
-    peft_config = LoraConfig(
-        r=16,
-        lora_alpha=32,
-        lora_dropout=0.05,
-        bias="none",
-        task_type="CAUSAL_LM",
-        target_modules=[
-            "up_proj",
-            "down_proj",
-            "gate_proj",
-            "k_proj",
-            "q_proj",
-            "v_proj",
-            "o_proj",
-        ],
-    )
 
     match strategy:
         case TrainingStrategy.SFT:
@@ -157,6 +159,7 @@ def _configure_trainer(strategy, model, tokenizer, dataset):
 
 def prepare_dataset(training_path):
     log.info(f"loading dataset {training_path}")
+
     def format_chat_template(row):
         role = "You are an expert on multiomics and pathogen metobolic pathways"
         row["chosen"] = f'{role} {row["chosen"]}'
@@ -172,6 +175,7 @@ def prepare_dataset(training_path):
     match training_path.suffix:
         case ".hf":
             from datasets import load_from_disk
+
             dataset = load_from_disk(training_path)
 
             log.info("mapping dataset")
@@ -181,17 +185,20 @@ def prepare_dataset(training_path):
         case _:
 
             dataset = load_dataset(
-                "json", data_files={"train": str(training_path)}, split="all",
+                "json",
+                data_files={"train": str(training_path)},
+                split="all",
             )
 
             log.info("mapping dataset")
             dataset = dataset.map(
-                format_chat_template, num_proc=os.cpu_count() // 2, batched=False,
+                format_chat_template,
+                num_proc=os.cpu_count() // 2,
+                batched=False,
             )
 
     log.info("shuffling dataset")
     dataset = dataset.shuffle(seed=42)
-
 
     log.info("splitting dataset")
     dataset = dataset.train_test_split(test_size=0.01)
@@ -204,20 +211,15 @@ def load(base_model, adapter_path):
     tokenizer = AutoTokenizer.from_pretrained(base_model, padding_side="left")
     model = AutoModelForCausalLM.from_pretrained(
         base_model,
-        # quantization_config=bnb_config,
-        device_map="auto",
+        quantization_config=bnb_config,
+        device_map=env.model.device_map,
         attn_implementation=attn_implementation,
         torch_dtype=torch_dtype,
         low_cpu_mem_usage=True,
     )
     model, tokenizer = setup_chat_format(model, tokenizer)
 
-    # Merge adapter with base model
-    config = PeftConfig(
-        inference_mode=True,
-        peft_type=PeftType.LORA,
-    )
-    adapter = PeftModel.from_pretrained(model, adapter_path) # , config=config)
+    adapter = PeftModel.from_pretrained(model, adapter_path, config=peft_config)
     log.info("merge and unload model")
     model = adapter.merge_and_unload()
     return tokenizer, model
