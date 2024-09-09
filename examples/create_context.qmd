@@ -1,0 +1,89 @@
+---
+title: Write out Context for RAFT
+jupyter: python3
+---
+
+This notebook quickly goes over making a context .txt file to pass to the RAFT dataset construction script `raft-dataset.py`.  The `fetch_context` function can be found in `genraitor/rag/uniprot_api.py`.
+
+
+```{python}
+import sys
+sys.path.insert(0, "../")
+```
+
+```{python}
+from genraitor.rag.uniprot_api import fetch_context
+import pickle
+import datetime
+import json
+```
+
+```{python}
+# Fetch context for some uniprot Accession ID's
+# These MUST be the Accession ID's, not the other uniprot identifiers.
+uniprots = pickle.load(open("/Users/clab683/git_repos/llama3-raft/output/all_entries.pkl", "rb"))
+
+abstracts, interactions, pathways, interaction_text, pathway_info = fetch_context(
+    uniprots,
+    query_body = "reviewed:true+AND+{uniprot}&fields=lit_pubmed_id,cc_interaction,cc_subunit,gene_synonym,cc_pathway,xref_reactome"
+)
+```
+
+```{python}
+thetime = datetime.datetime.now().strftime("%Y-%m-%d:%H:%M")
+
+pickle.dump(
+    {
+        'abstracts': abstracts, 
+        'interactions': interactions, 
+        'pathways': pathways, 
+        'interaction_text': interaction_text,
+        "pathway_info": pathway_info
+    },
+    open(f"1000_uniprots_context_{thetime}.p", "wb")
+)
+```
+
+```{python}
+# Custom construction of the context
+contexts = []
+
+for a, i, p, pi,uniprot in zip(abstracts, interaction_text, pathways, pathway_info, uniprots):
+    cur_abstracts = f"ABSTRACTS ({uniprot}):\n" + "\n".join(a) + "\n" if len(a) > 0 else ""
+    cur_interactions = f"INTERACTIONS ({uniprot}):\n" + "\n".join(i) + "\n" if len(i) > 0 else ""
+
+    if len(p) > 0 or len(pi) > 0:
+        cur_pathways = f"PATHWAY INFO ({uniprot}):\n"
+
+    if len(p) > 0:
+        append_pathways = []
+        for entry in p:
+            entry =json.loads(entry)
+            plus_context = entry['id'] + ": " + ".  ".join([el['value'] for el in entry['properties']])
+            append_pathways.append(plus_context)
+        cur_pathways += "\n".join(append_pathways) + "\n"
+
+    if len(pi) > 0:
+        cur_pathways = cur_pathways + "\n".join(pi) + "\n" if len(pi) > 0 else ""
+    else:
+        cur_pathways = ""
+    contexts.append(cur_abstracts + cur_interactions + cur_pathways)
+    
+contexts = [f"{uniprot}\n" + c for uniprot,c in zip(uniprots, contexts)]
+
+contexts
+```
+
+```{python}
+full_context = "### Begin Context For: " + "### End Context\n\n### Begin Context For: ".join(contexts) + "### End Context"
+```
+
+```{python}
+print(full_context)
+```
+
+```{python}
+with open(f"context_{len(uniprots)}_uniprots_{thetime}.txt", "w") as f:
+    f.write(full_context)
+```
+
