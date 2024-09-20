@@ -33,9 +33,8 @@ def init():
     "-a",
     "--adapter_path",
     "adapter_path",
-    required=True,
-    default=Path(env.paths.data) / "finetuned",
-    type=click.Path(file_okay=False, path_type=Path, exists=True),
+    required=False,
+    type=click.Path(file_okay=False, path_type=Path),
     show_default=True,
 )
 @click.option(
@@ -60,47 +59,30 @@ def init():
 @click.option("--batch_size", "batch_size", type=int, default=15)
 def evaluate(adapter_path, base_model, raft_path, save_path, batch_size):
     """Run the AlignScore metric."""
-    import duckdb
+    import pandas as pd
 
     from ..evaluate import align
     from ..raft import train
 
-    match raft_path.suffix:
-        case ".jsonl":
-            with duckdb.connect(":memory:") as conn:
-                data = conn.sql(
-                    f"""
-                    SELECT
-                        context || instruction || question as context
-                        ,cot_answer as claim
-                    FROM read_json("{raft_path}")
-                """
-                ).to_df()
-        case _:
-            import pandas as pd
-            from datasets import load_from_disk
-
-            data = pd.DataFrame(load_from_disk(raft_path).to_dict())
-            with duckdb.connect(":memory:") as conn:
-                data = conn.sql(
-                    """
-                    SELECT
-                        instruction as context
-                        ,cot_answer as claim
-                    FROM data
-                """
-                ).to_df()
-
+    data = align.load(raft_path)
     tokenizer, model = train.load(
-        adapter_path=adapter_path,
         base_model=base_model,
+        adapter_path=None,
     )
-    model.eval()
-    log.debug(model.get_memory_footprint())
-
-    result = align.evaluate(
+    base_result = align.evaluate(
         model=model, tokenizer=tokenizer, data=data, batch_size=batch_size
     )
+    base_result["model"] = "base"
+
+    tokenizer, model = train.load(
+        base_model=base_model,
+        adapter_path=adapter_path,
+    )
+    tuned_result = align.evaluate(
+        model=model, tokenizer=tokenizer, data=data, batch_size=batch_size
+    )
+    tuned_result["model"] = "tuned"
+    result = pd.concat([tuned_result, base_result])
     print(result.describe())
     if save_path is None:
         print(result.to_markdown(index=False))

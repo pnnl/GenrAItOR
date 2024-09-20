@@ -114,12 +114,13 @@ def _configure_trainer(strategy, model, tokenizer, dataset):
             args = SFTConfig(
                 learning_rate=1e-4,
                 lr_scheduler_type="linear",
-                per_device_train_batch_size=2,
-                per_device_eval_batch_size=2,
+                per_device_train_batch_size=env.training.batch_size,
+                per_device_eval_batch_size=env.training.batch_size,
+                max_seq_length=env.training.max_seq_len,
                 gradient_accumulation_steps=4,
                 optim="paged_adamw_8bit",
                 num_train_epochs=3,
-                evaluation_strategy="steps",
+                eval_strategy="steps",
                 eval_steps=100,
                 logging_steps=100,
                 warmup_steps=10,
@@ -140,12 +141,12 @@ def _configure_trainer(strategy, model, tokenizer, dataset):
                 lr_scheduler_type="linear",
                 max_length=1024,
                 max_prompt_length=512,
-                per_device_train_batch_size=2,
-                per_device_eval_batch_size=2,
+                per_device_train_batch_size=env.training.batch_size,
+                per_device_eval_batch_size=env.training.batch_size,
                 gradient_accumulation_steps=4,
                 optim="paged_adamw_8bit",
                 num_train_epochs=3,
-                evaluation_strategy="steps",
+                eval_strategy="steps",
                 eval_steps=100,
                 logging_steps=100,
                 warmup_steps=10,
@@ -225,7 +226,10 @@ def load(base_model, adapter_path):
     )
     model, tokenizer = setup_chat_format(model, tokenizer)
 
-    adapter = PeftModel.from_pretrained(model, adapter_path, config=peft_config)
-    log.info("merge and unload model")
-    model = adapter.merge_and_unload()
+    if adapter_path is not None:
+        adapter = PeftModel.from_pretrained(model, adapter_path, config=peft_config)
+        log.info("merge and unload model")
+        model = adapter.merge_and_unload()
+    else:
+        log.info("loading base model only")
     return tokenizer, model

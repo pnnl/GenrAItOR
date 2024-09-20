@@ -7,16 +7,16 @@ name = "genraitor"
 version = "0.1.1"
 readme = "README.md"
 keywords = [
-	"omics",
-	"disease prediction",
-	"DeepIMV",
-	"Llama3",
-	"metabolomics",
-	"data harmonization",
-	"RAG",
-	"RAFT",
-	"pathogens",
-	"macromolecules",
+  "omics",
+  "disease prediction",
+  "DeepIMV",
+  "Llama3",
+  "metabolomics",
+  "data harmonization",
+  "RAG",
+  "RAFT",
+  "pathogens",
+  "macromolecules",
 ]
 description = "Predicts most important features for disease prediction using omics sampling and Llama3 fine-tuning"
 authors = [{ name = "Matt Jensen", email = "matt.jensen@pnnl.gov" }]
@@ -54,6 +54,10 @@ evaluate = ["alignscore@git+https://github.com/yuh-zha/AlignScore"]
 [tool.setuptools]
 packages = ["genraitor"]
 
+[project.optional-dependencies]
+dev = ["ruff>=0.5.6", "pytest >= 8.3.3", "mypy >= 1.11.2"]
+
+
 [tool.mypy]
 python_version = "3.12"
 ignore_missing_imports = true
@@ -73,31 +77,26 @@ exclude = ['tests']
 [tool.ruff]
 line-length = 88
 extend-select = ["I"]
-exclude = [
-	"__pycache__",
-	".git",
-	"tests",
-	"docs"
-]
+exclude = ["__pycache__", ".git", "tests", "docs"]
 
 [tool.ruff.lint]
 pydocstyle.convention = "google"
 ignore = ['D203', 'D212', "E203", "E501"]
 select = [
-	'C',
-	'F',
-	'E',
-	'W',
-	'I',
-	'N',
-	'D',
-	'B',
-	'A',
-	'COM',
-	'C4',
-	'T20',
-	'Q',
-	'SIM',
+  'C',
+  'F',
+  'E',
+  'W',
+  'I',
+  'N',
+  'D',
+  'B',
+  'A',
+  'COM',
+  'C4',
+  'T20',
+  'Q',
+  'SIM',
 ]
 
 [tool.uv.sources]
