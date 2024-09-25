@@ -1,15 +1,8 @@
 from metapub import PubMedFetcher
 import requests
-import json
 import logging
 
 logging.basicConfig(level=logging.INFO)
-
-DEFAULT_QUERY = "reviewed:true+AND+{uniprot}&fields=lit_pubmed_id,cc_interaction,cc_subunit,gene_synonym,cc_pathway"
-DEFAULT_HEADERS = {
-    'Accept': 'application/json',
-    'Content-Type': 'application/json'
-}
 
 def extract_interactions(query_results):
     """Extract the interaction information from the results of a uniprot query.
@@ -89,6 +82,21 @@ def extract_subunit(query_results):
 
     return all_comments
                     
+QUERY_BASE = "reviewed:true+AND+{uniprot}&fields=lit_pubmed_id{extra_fields}"
+DEFAULT_HEADERS = {
+    'Accept': 'application/json',
+    'Content-Type': 'application/json'
+}
+
+EXTRACT_FN_MAP = {
+    "cc_interaction":  extract_interactions,
+    "cc_pathway": extract_pathways_comments,
+    "xref_reactome": extract_pathways_db,
+    "cc_subunit": extract_subunit
+}
+
+DEFAULT_EXTRA_FIELDS = list(EXTRACT_FN_MAP.keys())
+DEFAULT_QUERY = QUERY_BASE.format(uniprot = "{uniprot}", extra_fields = "," + ",".join(DEFAULT_EXTRA_FIELDS))
 
 def fetch_uniprot(uniprots, headers = DEFAULT_HEADERS, payload = {}, query_body=DEFAULT_QUERY):
     """Fetch uniprot information for a list of uniprot ids using the uniprot REST API.
@@ -145,64 +153,58 @@ def fetch_abstracts(query_results, cache_dir = "~/.cache/metapub"):
     
     return all_abstracts, all_pmids
 
-def fetch_context(uniprots, secondary_context = False, max_characters=16_000, **kwargs):
+def fetch_context(uniprots, secondary_context = False, max_characters=16_000, extra_fields=list(EXTRACT_FN_MAP.keys()), **kwargs):
     """Fetch context information for a list of uniprot accession numbers.
 
     Args:
         uniprots (List[str]): A list of uniprot accession numbers to query.
         secondary_context (bool, optional): Whether to fetch results of secondary search results. Defaults to False.
         max_characters (int, optional):  Limit on the number of characters in the abstract information to return.  Defaults to 16_000.
+        extra_fields (List[str], optional):  A list of strings for the comma separated entries following the `fields` header parameter in the uniprot query.  See https://www.uniprot.org/help/api_queries for examples.
         **kwargs: Additional keyword arguments to pass to the fetch_uniprot function.
 
     Returns:
-        Tuple[List[str], List[str]]: Context information for each uniprot query as a string suitable for injection into a prompt template.  The first list contains abstracts, the second list contains interaction information.
+        Dict[str, List[Any]]: Each value of the returned dictionary contains a list with each element corresponding to the entry in the uniprots argument.  They are abstracts as well as information from the `extra_fields` argument passed to the uniprot query.
     """
-    # A list of results per uniprot query.  Each result is a list of dictionaries
-    query_results = fetch_uniprot(uniprots, **kwargs)
+    uniprot_query = DEFAULT_QUERY.format(uniprot = "{uniprot}", extra_fields = "," + ",".join(extra_fields))
 
-    all_abstract_context = []
-    all_interaction_context = []
-    all_pathway_db_context = []
-    all_pathway_info_context = []
-    all_subunit_context = []
+    # A list of results per uniprot query.  Each result is a list of dictionaries
+    query_results = fetch_uniprot(uniprots, query_body = uniprot_query, **kwargs)
+
+    all_context = {}
 
     # For each query result
     for up, qr in zip(uniprots, query_results):
         logging.info(f"Retrieving context for uniprot id {up}")
-        abstract_context = []
-        interaction_context = []
-        pathway_db_context = []
+        # abstract_context = []
+        # interaction_context = []
+        # pathway_db_context = []
 
         # only keep information from the direct hit of the query
         if not secondary_context:
             qr = [el for el in qr if el['primaryAccession'] == up]
 
+        # always fetch abstract context
         abstracts, _ = fetch_abstracts(qr)
-        interactions = extract_interactions(qr)
-        interaction_texts = extract_subunit(qr)
-        pathways_db = extract_pathways_db(qr)
-        pathway_info = extract_pathways_comments(qr)
+
+        # fetch other context information
+        for field in extra_fields:
+            if field in EXTRACT_FN_MAP:
+                res = EXTRACT_FN_MAP[field](qr)
+                all_context.setdefault(field, []).append(res)
+            else:
+                logging.warning(f"Field {field} not found in extraction function map.")
 
         abstract_len = 0
 
-        for a in abstracts:
+        # pointless, it's already a list...we're just re-appending to another list...just check the length.
+        for i, a in enumerate(abstracts):
             if a is None:
                 continue
             if (abstract_len + len(a)) > max_characters:
                 break
             abstract_len += len(a)
-            abstract_context.append(a)
+        
+        all_context.setdefault('abstract', []).append(abstracts[:i])
 
-        for i in interactions:
-            interaction_context.append(json.dumps(i))
-
-        for p in pathways_db:
-            pathway_db_context.append(json.dumps(p))
-
-        all_abstract_context.append(abstract_context)
-        all_interaction_context.append(interaction_context)
-        all_pathway_db_context.append(pathway_db_context)
-        all_subunit_context.append(interaction_texts)
-        all_pathway_info_context.append(pathway_info)
-
-    return all_abstract_context, all_interaction_context, all_pathway_db_context, all_subunit_context, all_pathway_info_context
+    return all_context
