@@ -205,6 +205,6 @@ def fetch_context(uniprots, secondary_context = False, max_characters=16_000, ex
                 break
             abstract_len += len(a)
         
-        all_context.setdefault('abstract', []).append(abstracts[:i])
+        all_context.setdefault('abstracts', []).append(abstracts[:i])
 
     return all_context

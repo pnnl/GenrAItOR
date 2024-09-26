@@ -5,7 +5,6 @@ jupyter: python3
 
 This notebook quickly goes over making a context .txt file to pass to the RAFT dataset construction script `raft-dataset.py`.  The `fetch_context` function can be found in `genraitor/rag/uniprot_api.py`.
 
-
 ```{python}
 import sys
 sys.path.insert(0, "../")
@@ -18,67 +17,77 @@ import datetime
 import json
 ```
 
+First we retrieve a boatload of context from the uniprot API, this is done by passing Accession ID's to `fetch_context`.  By default, the function will build a query that aligns with the [uniprot api](https://www.uniprot.org/help/api_queries).  By default, abstracts for related pubmed articles will be retrieved as well as the search fields `['cc_interaction', 'cc_pathway', 'xref_reactome', 'cc_subunit']`.  Each has an associated function to extract the results.
+
 ```{python}
 # Fetch context for some uniprot Accession ID's
 # These MUST be the Accession ID's, not the other uniprot identifiers.
-uniprots = pickle.load(open("/Users/clab683/git_repos/llama3-raft/output/all_entries.pkl", "rb"))
 
-abstracts, interactions, pathways, interaction_text, pathway_info = fetch_context(
-    uniprots,
-    query_body = "reviewed:true+AND+{uniprot}&fields=lit_pubmed_id,cc_interaction,cc_subunit,gene_synonym,cc_pathway,xref_reactome"
-)
+uniprots = [
+ 'Q9BRJ2',
+ 'P09758',
+ 'P84085',
+ 'P08708',
+ 'P46013',
+ 'P02768',
+ 'P05026',
+ 'P14618'
+]
+
+# uniprots = pickle.load(open("/Users/clab683/git_repos/llama3-raft/output/all_entries.pkl", "rb"))
+
+results = fetch_context(uniprots)
 ```
 
 ```{python}
 thetime = datetime.datetime.now().strftime("%Y-%m-%d:%H:%M")
 
 pickle.dump(
-    {
-        'abstracts': abstracts, 
-        'interactions': interactions, 
-        'pathways': pathways, 
-        'interaction_text': interaction_text,
-        "pathway_info": pathway_info
-    },
-    open(f"1000_uniprots_context_{thetime}.p", "wb")
+    results,
+    open(f"uniprot_context_results_{thetime}.p")
 )
 ```
 
+The result is a dictionary with keys for abstracts and various fields retrieved from uniprot.  The values are lists with entries aligned to the provided uniprots.  We can use these to create our custom context to pass to the RAFT dataset creation process.
+
 ```{python}
-# Custom construction of the context
+# Custom construction of the context, we wont use cc_interaction, since it is a non-text version.
+
 contexts = []
 
-for a, i, p, pi,uniprot in zip(abstracts, interaction_text, pathways, pathway_info, uniprots):
-    cur_abstracts = f"ABSTRACTS ({uniprot}):\n" + "\n".join(a) + "\n" if len(a) > 0 else ""
-    cur_interactions = f"INTERACTIONS ({uniprot}):\n" + "\n".join(i) + "\n" if len(i) > 0 else ""
+for abstracts, path_info, path_text, interaction_text, uniprot in zip(
+    results['abstracts'],
+    results['xref_reactome'],
+    results['cc_pathway'],
+    results['cc_subunit'],
+    uniprots
+):
+    abstracts = [a for a in abstracts if a is not None]
+    cur_abstracts = f"ABSTRACTS ({uniprot}):\n" + "\n".join(abstracts) + "\n" if len(abstracts) > 0 else ""
 
-    if len(p) > 0 or len(pi) > 0:
+    cur_interactions = f"INTERACTIONS ({uniprot}):\n" + "\n".join(interaction_text) + "\n" if len(interaction_text) > 0 else ""
+
+    if len(path_info) > 0 or len(path_text) > 0:
         cur_pathways = f"PATHWAY INFO ({uniprot}):\n"
 
-    if len(p) > 0:
+    if len(path_info) > 0:
         append_pathways = []
-        for entry in p:
-            entry =json.loads(entry)
+        for entry in path_info:
             plus_context = entry['id'] + ": " + ".  ".join([el['value'] for el in entry['properties']])
             append_pathways.append(plus_context)
         cur_pathways += "\n".join(append_pathways) + "\n"
 
-    if len(pi) > 0:
-        cur_pathways = cur_pathways + "\n".join(pi) + "\n" if len(pi) > 0 else ""
-    else:
-        cur_pathways = ""
+    if len(path_text) > 0:
+        cur_pathways = cur_pathways + "\n".join(path_text) + "\n" if len(path_text) > 0 else ""
+
     contexts.append(cur_abstracts + cur_interactions + cur_pathways)
     
 contexts = [f"{uniprot}\n" + c for uniprot,c in zip(uniprots, contexts)]
-
-contexts
 ```
 
 ```{python}
 full_context = "### Begin Context For: " + "### End Context\n\n### Begin Context For: ".join(contexts) + "### End Context"
-```
 
-```{python}
 print(full_context)
 ```
 
