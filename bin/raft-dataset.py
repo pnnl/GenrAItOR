@@ -1,10 +1,10 @@
 """
 Example of using the RAFTDatasetPack class to generate a dataset from a text file containing context (e.g. from pubmed abstracts and uniprot entries). The dataset is then used to generate a dataset in huggingface format.
 
-By default it will use gpt-4o and the ada-002 embeddings via the llama-index interface to OpenAI, using our endpoint.  To get around rate limit issues using the local version, specify to use a local embedding model like so:
+By default it will use gpt-4o using the llanaand the Alibaba-NLP/gte-large-en-v1.5 embeddings via the llama-index and huygg interface to OpenAI, using our endpoint.  To get around rate limit issues using the local version, specify to use a local embedding model like so:
 
 ```
-python build-raft.py --embed local
+python raft-dataset.py --embed local
 ```
 
 """
@@ -12,7 +12,7 @@ from llama_index.llms.openai import OpenAI
 from llama_index.embeddings.openai import OpenAIEmbedding
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 
-from genraitor.synthetic.raft_dataset import BioRAFTDatasetPack
+from genraitor.data.raft_dataset import RAFTDatasetPack
 
 import os
 import argparse
