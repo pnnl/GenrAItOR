@@ -15,11 +15,6 @@ before_script:
   - docker info
   - docker pull openjournals/inara:latest
 
-# Trigger pipeline on changes to specific paths
-only:
-  changes:
-    - paper/**
-    - .gitlab-ci.yml
 
 build_pdf:
   stage: build
@@ -28,6 +23,10 @@ build_pdf:
   artifacts:
     paths:
       - paper/paper.pdf
+  only:
+    changes:
+      - paper/**
+      - .gitlab-ci.yml
 
 upload_artifact:
   stage: upload
