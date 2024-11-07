@@ -1,120 +1,107 @@
 ---
-title: 'Gala: A Python package for galactic dynamics'
+title: 'GenrAItOR: Generative AI for ‘Omics Research'
 tags:
   - Python
-  - astronomy
-  - dynamics
-  - galactic dynamics
-  - milky way
+  - multiomics
+  - LLM
+  - proteins
 authors:
-  - name: Adrian M. Price-Whelan
+  - name: Matthew Jensen
     orcid: 0000-0000-0000-0000
-    equal-contrib: true
-    affiliation: "1, 2" # (Multiple affiliations must be quoted)
-  - name: Author Without ORCID
-    equal-contrib: true # (This is how you can denote equal contributions between multiple authors)
-    affiliation: 2
-  - name: Author with no affiliation
-    corresponding: true # (This is how to denote the corresponding author)
-    affiliation: 3
-  - given-names: Ludwig
-    dropping-particle: van
-    surname: Beethoven
-    affiliation: 3
+    affiliation: 1
+  - name: Daniel Claborne
+    orcid: 0000-0000-0000-0000
+    affiliation: 1
+  - name: Javier E. Flores
+    orcid: 0000-0000-0000-0000
+    affiliation: 1
+  - name: Lisa Bramer
+    orcid: 0000-0000-0000-0000
+    affiliation: 1
+  - name: Samantha Erwin
+    orcid: 0000-0000-0000-0000
+    affiliation: 1
+    corresponding: true
 affiliations:
- - name: Lyman Spitzer, Jr. Fellow, Princeton University, USA
+ - name: Pacific Northwest National Laboratory
    index: 1
-   ror: 00hx57361
- - name: Institution Name, Country
-   index: 2
- - name: Independent Researcher, Country
-   index: 3
-date: 13 August 2017
+date: 07 November 2024
 bibliography: paper.bib
 
-# Optional fields if submitting to a AAS journal too, see this blog post:
-# https://blog.joss.theoj.org/2018/12/a-new-collaboration-with-aas-publishing
-aas-doi: 10.3847/xxxxx <- update this with the DOI from AAS once you know it.
-aas-journal: Astrophysical Journal <- The name of the AAS journal.
 ---
 
 # Summary
 
-The forces on stars, galaxies, and dark matter under external gravitational
-fields lead to the dynamical evolution of structures in the universe. The orbits
-of these bodies are therefore key to understanding the formation, history, and
-future state of galaxies. The field of "galactic dynamics," which aims to model
-the gravitating components of galaxies to study their structure and evolution,
-is now well-established, commonly taught, and frequently used in astronomy.
-Aside from toy problems and demonstrations, the majority of problems require
-efficient numerical tools, many of which require the same base code (e.g., for
-performing numerical orbit integration).
+In this work, we use Retrieval Augmented Fine-Tuning (RAFT) to fine-tune Llama 3, a large language model (LLM), using the textual corpora of 'omics-related literature harvested from publicly available databases and abstracts.
+The resulting Llama 3-RAFT model accepts queries about biomolecules and returns relevant biological information (e.g., reaction pathways, function) based on the user-provided context and learned patterns from the RAFT fine tuning.
 
-# Statement of need
+# Introduction
 
-`Gala` is an Astropy-affiliated Python package for galactic dynamics. Python
-enables wrapping low-level languages (e.g., C) for speed without losing
-flexibility or ease-of-use in the user-interface. The API for `Gala` was
-designed to provide a class-based and user-friendly interface to fast (C or
-Cython-optimized) implementations of common operations such as gravitational
-potential and force evaluation, orbit integration, dynamical transformations,
-and chaos indicators for nonlinear dynamics. `Gala` also relies heavily on and
-interfaces well with the implementations of physical units and astronomical
-coordinate systems in the `Astropy` package [@astropy] (`astropy.units` and
-`astropy.coordinates`).
+Advances in instrumentation have led to the increased and rapid collection of multiple ‘omics data (e.g., proteomics, genomics, metabolomics), paving the way for a more holistic understanding of biological systems and the detection of mechanisms leading to pathogenesis.
 
-`Gala` was designed to be used by both astronomical researchers and by
-students in courses on gravitational dynamics or astronomy. It has already been
-used in a number of scientific publications [@Pearson:2017] and has also been
-used in graduate courses on Galactic dynamics to, e.g., provide interactive
-visualizations of textbook material [@Binney:2008]. The combination of speed,
-design, and support for Astropy functionality in `Gala` will enable exciting
-scientific explorations of forthcoming data releases from the *Gaia* mission
-[@gaia] by students and experts alike.
+Several approaches have been developed that harmonize multi-omic data under unified modeling frameworks1-3. However, to interrogate these models beyond the predictions or sample groupings they generate, analysts must rely on i) variable importance methods (e.g., Shapley values4) to extract the most predictive/discriminatory set of modeled biomolecules, and ii) domain scientists (e.g., biologists) to contextualize the identified features within the modeled system based on their own knowledge or awareness/review of the relevant scientific literature.
 
-# Mathematics
+LLMs provide an opportunity to improve the efficiency of the human-dependent aspect of model interrogation described in (ii). Specifically, domain-level experts may query a LLM for biological information on the indicated biomolecules and then judge and potentially revise generated responses for relevance and accuracy.
 
-Single dollars ($) are required for inline mathematics e.g. $f(x) = e^{\pi/x}$
+Many existing LLMs are general purpose, having been trained on the vast corpora of data available from social media and other public sources. Since these foundational LLMs were trained without the domain-specific language required by ‘omic-based queries, the aim of this work is to use RAFT5 to update an open-source, foundational LLM so that it may serve as an AI-assistant to the domain expert in their contextualization of important modeled features.
 
-Double dollars make self-standing equations:
+# Methods
 
-$$\Theta(x) = \left\{\begin{array}{l}
-0\textrm{ if } x < 0\cr
-1\textrm{ else}
-\end{array}\right.$$
+Obtaining a domain-specific LLM is typically achieved through fine-tuning (FT) or retrieval-augmented generation (RAG). However, both approaches are limited:
 
-You can also use plain \LaTeX for equations
-\begin{equation}\label{eq:fourier}
-\hat f(\omega) = \int_{-\infty}^{\infty} f(x) e^{i\omega x} dx
-\end{equation}
-and refer to \autoref{eq:fourier} from text.
+- FT restricted to information within training data but requires no context
+- RAG may retrieve irrelevant contextual documents, but is more generally applicable given its access to context documents
 
-# Citations
+The RAFT approach is a combination of FT and RAG such that models can better retrieve relevant documents for queries by virtue of finetuning.
 
-Citations to entries in paper.bib should be in
-[rMarkdown](http://rmarkdown.rstudio.com/authoring_bibliographies_and_citations.html)
-format.
+An overview of our development of a RAFT model is provided by Figure 1, and more detailed steps are provided below:
 
-If you want to cite a software repository URL (e.g. something on GitHub without a preferred
-citation) then you can do it with the example BibTeX entry below for @fidgit.
+1. PubMed and UniProt data were scraped using their publicly available APIs.
 
-For a quick reference, the following citation commands can be used:
-- `@author:2001`  ->  "Author et al. (2001)"
-- `[@author:2001]` -> "(Author et al., 2001)"
-- `[@author1:2001; @author2:2001]` -> "(Author1 et al., 2001; Author2 et al., 2002)"
+2. These data were provided to GPT-4o with instructions to generate question-answer pairs to use as synthetic data.
 
-# Figures
+- Context chunks were determined by grouping semantically similar text via a text embedding approach.
 
-Figures can be included like this:
-![Caption for example figure.\label{fig:example}](figure.png)
-and referenced from text using \autoref{fig:example}.
+3. GPT-4o synthetic data was split into training evaluation subsets, with the training subset used to implement RAFT on Llama 3. An example question-answer pair used for RAFT training:
 
-Figure sizes can be customized by adding an optional second parameter:
-![Caption for example figure.](figure.png){ width=20% }
+- Question: “[...] </DOCUMENT> What techniques were used to establish the protein composition of chromatographic fractions?”
+- Answer: “[...] <ANSWER>: Two-dimensional polyacrylamide gel electrophoresis, N-terminal sequencing, endoproteinase Lys-C cleavage followed by peptide sequencing, comparison with ribosomal protein databases, and matrix-assisted laser-desorption ionization mass spectrometry (MALDI-MS).”
+
+4. The evaluation subset was used to compare the performance of the RAFT-Llama 3 to the RAG-Llama 3 via the Align Score6.
+
+- This score quantifies how well a response summarizes the informational content within reference document(s). The original input documents for each query were used as the reference documents in computing the align score for said query.
+
+# Results
+
+Figure 2 summarizes our work’s main comparison of interest. The distribution of the align score for the RAFT-Llama 3 model is depicted (in blue) above the corresponding distribution for the base Llama 3 model.
+
+While both distributions appear largely similar, it should be noted that:
+
+- Mean align score is slightly improved in the RAFT model relative to the base Llama 3
+- In line with the improved mean, the RAFT distribution of align scores is more left skewed
+
+Jointly, these results indicate that the RAFT model more typically generates responses that are marginally better aligned with the truth.
+
+# Lessons Learned
+
+Through our implementation and comparison of RAFT to a RAG approach, a few challenges were met:
+
+1. Obtaining training data. Ideally, RAFT implementations are based on human-expert-curated, non-synthetic datasets of question-answer pairs. This kind of data was not available to us, prompting our generation and use of synthetic data based on real information.
+
+2. Model Training/Computation Challenges. Large context chunks were sometimes difficult to load into GPU memory, forcing us to limit the generated context size. Long training/generation times for modestly sized datasets required careful checkpointing/monitoring.
+
+3. LLM evaluation. Proper evaluation of any model requires a suitably large evaluation dataset, and in this context, a large evaluation dataset prohibits human-based evaluation. We instead relied on an automated metric, the Align Score, which has been benchmarked against other automated metrics on various datasets and assessed as best.
+
+# Discussion
+
+Our work found comparable performance between RAFT and RAG implementations of Llama 3 on ‘omics-based queries, with the RAFT implementation showing marginal improvement.
+
+The align scores of each approach indicate a similar ability to summarize the original input documents that contain the information of interest, thereby demonstrating some promise in either approach for service as an AI-assistant to the inquiring ‘omics expert.
+
+Importantly, these results were achieved based on synthetically generated data. These synthetic data were not verified for their fidelity to source truth, and thus it is entirely possible that better results may be obtained through a more involved curation of training data led by biological experts.
 
 # Acknowledgements
 
-We acknowledge contributions from Brigitta Sipocz, Syrtis Major, and Semyeong
-Oh, and support from Kathryn Johnston during the genesis of this project.
+We acknowledge contributions from [...]
 
 # References
