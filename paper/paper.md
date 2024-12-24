@@ -49,16 +49,13 @@ Many existing LLMs are general purpose, having been trained on the vast corpora 
 
 # Methods
 
-Obtaining a domain-specific LLM is typically achieved through fine-tuning (FT) or retrieval-augmented generation (RAG). However, both approaches are limited:
+Obtaining a domain-specific LLM is typically achieved through fine-tuning (FT) or retrieval-augmented generation (RAG). However, both approaches have limitations. FT is restricted to information within the training data but does not require context <!--- Add citation--->. RAG, on the other hand, may retrieve irrelevant contextual documents, but is more generally applicable given its access to context documents <!--- Add citation--->.
 
-- FT restricted to information within training data but requires no context
-- RAG may retrieve irrelevant contextual documents, but is more generally applicable given its access to context documents
+The RAFT approach is a combination of FT and RAG such that models can better retrieve relevant documents for queries by virtue of finetuning <!--- Add citation--->.
 
-The RAFT approach is a combination of FT and RAG such that models can better retrieve relevant documents for queries by virtue of finetuning.
+An overview of our development of a RAFT model is provided by Figure 1, and more detailed steps are:
 
-An overview of our development of a RAFT model is provided by Figure 1, and more detailed steps are provided below:
-
-1. PubMed and UniProt data were scraped using their publicly available APIs.
+1. PubMed and UniProt data were harvested using their publicly available APIs.
 
 2. These data were provided to GPT-4o with instructions to generate question-answer pairs to use as synthetic data.
 
@@ -86,6 +83,8 @@ Jointly, these results indicate that the RAFT model more typically generates res
 
 ![Distribution of Align Scores for the RAFT-Llama 3 (“Finetuned”) and the RAG-Llama3 model.](images/results.png){#fig:results}
 
+<!--- We're there also general improvements made to the code base? Can we highlight those as well? --->
+
 # Lessons Learned
 
 Through our implementation and comparison of RAFT to a RAG approach, a few challenges were met:
@@ -102,11 +101,11 @@ Our work found comparable performance between RAFT and RAG implementations of Ll
 
 The align scores of each approach indicate a similar ability to summarize the original input documents that contain the information of interest, thereby demonstrating some promise in either approach for service as an AI-assistant to the inquiring ‘omics expert.
 
-Importantly, these results were achieved based on synthetically generated data. These synthetic data were not verified for their fidelity to source truth, and thus it is entirely possible that better results may be obtained through a more involved curation of training data led by biological experts.
+Importantly, these results were achieved based on synthetically generated data. These synthetic data were not verified for their fidelity to source truth, and thus it is entirely possible that better results may be obtained through a more involved curation of training data led by biological experts. <!--- Can we soften this discussion point? Also, what can we discuss that was an improvement?--->
 
 # Acknowledgements
 
-We acknowledge contributions from [.PNNL Gen AI..]
-<!--- Comments are Fun --->
+We acknowledge contributions from <!---Include GenAI investments--->
+
 
 # References
