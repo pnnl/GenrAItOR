@@ -19,7 +19,7 @@ before_script:
 build_pdf:
   stage: build
   script:
-    - docker run --rm -e GIT_SHA=$GIT_SHA -e JOURNAL=$JOURNAL -v $CI_PROJECT_DIR:/data openjournals/inara:latest -o pdf paper/paper.md
+    - docker run --rm -e GIT_SHA=$GIT_SHA -e JOURNAL=$JOURNAL -v $CI_PROJECT_DIR:/data openjournals/inara:latest -p -o pdf,preprint paper/paper.md
   artifacts:
     paths:
       - paper/paper.pdf
