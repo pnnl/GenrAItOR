@@ -106,6 +106,6 @@ Importantly, these results were achieved based on synthetically generated data. 
 
 # Acknowledgements
 
-We acknowledge contributions from [...]
+We acknowledge contributions from [.PNNL Gen AI..]
 
 # References
