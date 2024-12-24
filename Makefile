@@ -6,6 +6,16 @@ POOL?="dl_shared"
 
 all:
 
+.PHONY: paper
+paper:
+	docker run --rm -it \
+		-e JOURNAL="joss" \
+		-v ${PWD}:/data \
+		-u $(id -u):$(id -g) \
+		openjournals/inara \
+		-o pdf,crossref \
+		paper/paper.md
+
 .PHONY: train
 train:
 	$(PYTHON) -m $(PROJECT) train:raft \
