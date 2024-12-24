@@ -10,16 +10,16 @@ authors:
     orcid: 0000-0000-0000-0000
     affiliation: 1
   - name: Daniel Claborne
-    orcid: 0000-0000-0000-0000
+    orcid: 0000-0001-5293-3628
     affiliation: 1
   - name: Javier E. Flores
-    orcid: 0000-0000-0000-0000
+    orcid: 0000-0002-1550-1655
     affiliation: 1
   - name: Lisa Bramer
-    orcid: 0000-0000-0000-0000
+    orcid: 0000-0002-8384-1926
     affiliation: 1
   - name: Samantha Erwin
-    orcid: 0000-0000-0000-0000
+    orcid: 0000-0002-5162-4193
     affiliation: 1
     corresponding: true
 affiliations:
@@ -32,14 +32,14 @@ bibliography: refs.bib
 
 # Summary
 
-In this work, we use Retrieval Augmented Fine-Tuning (RAFT) to fine-tune Llama 3, a large language model (LLM), using the textual corpora of 'omics-related literature harvested from publicly available databases and abstracts.
+In this work, we use Retrieval Augmented Fine-Tuning (RAFT) to fine-tune Llama 3, a large language model (LLM), using the textual corpora of 'omics-related literature harvested from publicly available databases and abstracts.  
 The resulting Llama 3-RAFT model accepts queries about biomolecules and returns relevant biological information (e.g., reaction pathways, function) based on the user-provided context and learned patterns from the RAFT fine tuning.
 
 # Introduction
 
 Advances in instrumentation have led to the increased and rapid collection of multiple ‘omics data (e.g., proteomics, genomics, metabolomics), paving the way for a more holistic understanding of biological systems and the detection of mechanisms leading to pathogenesis.
 
-Several approaches have been developed that harmonize multi-omic data under unified modeling frameworks1-3. However, to interrogate these models beyond the predictions or sample groupings they generate, analysts must rely on i) variable importance methods (e.g., Shapley values4) to extract the most predictive/discriminatory set of modeled biomolecules, and ii) domain scientists (e.g., biologists) to contextualize the identified features within the modeled system based on their own knowledge or awareness/review of the relevant scientific literature.
+Several approaches have been developed that harmonize multi-omic data under unified modeling frameworks 1-3 <!--- Add citation--->. However, to interrogate these models beyond the predictions or sample groupings they generate, analysts must rely on i) variable importance methods (e.g., Shapley values4<!--- Add citation---> ) to extract the most predictive/discriminatory set of modeled biomolecules, and ii) domain scientists (e.g., biologists) to contextualize the identified features within the modeled system based on their own knowledge or awareness/review of the relevant scientific literature.
 
 LLMs provide an opportunity to improve the efficiency of the human-dependent aspect of model interrogation described in (ii). Specifically, domain-level experts may query a LLM for biological information on the indicated biomolecules and then judge and potentially revise generated responses for relevance and accuracy.
 
