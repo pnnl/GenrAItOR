@@ -45,6 +45,8 @@ LLMs provide an opportunity to improve the efficiency of the human-dependent asp
 
 Many existing LLMs are general purpose, having been trained on the vast corpora of data available from social media and other public sources. Since these foundational LLMs were trained without the domain-specific language required by ‘omic-based queries, the aim of this work is to use RAFT5 to update an open-source, foundational LLM so that it may serve as an AI-assistant to the domain expert in their contextualization of important modeled features.
 
+![Genraitor Process Overview. Synthetic training data are generated using ChatGPT-4o. These question-answer-context triplicates are then used to fine-tune Llama 3 in a RAFT context. The output RAFT model is then implemented/evaluated on a hold-out set of generated triplicates.](images/workflow.png){#fig:workflow}
+
 # Methods
 
 Obtaining a domain-specific LLM is typically achieved through fine-tuning (FT) or retrieval-augmented generation (RAG). However, both approaches are limited:
@@ -81,6 +83,8 @@ While both distributions appear largely similar, it should be noted that:
 - In line with the improved mean, the RAFT distribution of align scores is more left skewed
 
 Jointly, these results indicate that the RAFT model more typically generates responses that are marginally better aligned with the truth.
+
+![Distribution of Align Scores for the RAFT-Llama 3 (“Finetuned”) and the RAG-Llama3 model.](images/results.png){#fig:results}
 
 # Lessons Learned
 
