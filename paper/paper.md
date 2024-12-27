@@ -70,6 +70,34 @@ An overview of our development of a RAFT model is provided by Figure 1, and more
 
 - This score quantifies how well a response summarizes the informational content within reference document(s). The original input documents for each query were used as the reference documents in computing the align score for said query.
 
+## Source Code
+
+The entire process is encapsulated into a python package and run using the built in command line interface. Each step corresponds to a set of commands that download, process and split the data, download and fine-tune an open-source LLM and evaluated the results using AlignScore.
+
+```python
+
+# download pubmed data
+python3 -m genraitor data:pubmed
+
+# generate RAG data from data
+python3 -m genraitor rag:data
+
+# fine-tune train the LLM
+python3 -m genraitor train:raft
+```
+
+The commands are configurable via flags or environment variables. The default options are set by reading from either the environment or a .env file. For help with available options, pass the --help flag to any of the commands:
+
+```python
+python3 -m genraitor train:raft --help
+```
+
+This study extended the python packages `llama-index` (@liu_llamaindex_2022) and `AlignScore` (@zha_alignscore_2023) in the following ways:
+
+- We modified the `llama-index-packs-raft-dataset` to allow configurable system prompts when generating questions for each chunk of the RAG documents. This allowed us to experiment with prompt engineering to improve the relevance of the generated questions to each document.
+- We modified the source code for the function `get_chunks` to respect the parameter `chunk_size` when parsing the RAG documents. This modification allowed us to optimize the length of text each RAG document used for training.
+- We modified relaxed the dependency requirements for the `AlignScore` package to allow the use of `pytorch` version 2.0. This significantly reduced compatibility issues using more recent models and data formats and allowed us to use a single codebase for the entire project.
+
 # Results
 
 Figure 2 summarizes our work’s main comparison of interest. The distribution of the align score for the RAFT-Llama 3 model is depicted (in blue) above the corresponding distribution for the base Llama 3 model.
@@ -106,6 +134,5 @@ Importantly, these results were achieved based on synthetically generated data. 
 # Acknowledgements
 
 We acknowledge contributions from <!---Include GenAI investments--->
-
 
 # References

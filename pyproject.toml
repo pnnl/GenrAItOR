@@ -21,42 +21,42 @@ keywords = [
 description = "Predicts most important features for disease prediction using omics sampling and Llama3 fine-tuning"
 authors = [{ name = "Matt Jensen", email = "matt.jensen@pnnl.gov" }]
 dependencies = [
-	"setuptools >= 70.2.0",
-	"click >= 8.1.7",
-	"structlog >= 24.2.0",
-	"torch >= 2.4.0",
-	"nvidia-cudnn-cu12 >= 8.0.0.0",
-	"trl >=0.9.4",
-	"bitsandbytes >= 0.42.0",
-	"flash-attn >= 2.6.3",
-	"transformers >= 4.43.1",
-	"peft >= 0.11.1",
-	"numpy <= 2.0.0",
-	"datasets >= 2.20.0",
-	"ollama >= 0.3.0",
-	"llama-index >= 0.10.52",
-	"llama-index-llms-ollama >= 0.2.2",
-	"llama-index-embeddings-ollama >= 0.1.2",
-	"llama-index-embeddings-huggingface>=0.3.1",
-	"notebook >= 7.2.1",
-	"duckdb >= 1.0.0",
-	"biopython >= 0.84",
-	"tabulate >= 0.9.0",
-	"metapub >= 0.5.12",
-	"ruff>=0.6.1",
-	"pydantic >= 2.9.0",
-	"pydantic-settings >= 2.4.0",
+  "setuptools >= 70.2.0",
+  "click >= 8.1.7",
+  "structlog >= 24.2.0",
+  "torch >= 2.4.0",
+  "trl >=0.9.4",
+  "transformers >= 4.43.1",
+  "peft >= 0.11.1",
+  "numpy <= 2.0.0",
+  "datasets >= 2.20.0",
+  "ollama >= 0.3.0",
+  "llama-index >= 0.10.52",
+  "llama-index-llms-ollama >= 0.2.2",
+  "llama-index-embeddings-ollama >= 0.1.2",
+  "llama-index-embeddings-huggingface>=0.3.1",
+  "notebook >= 7.2.1",
+  "duckdb >= 1.0.0",
+  "biopython >= 0.84",
+  "tabulate >= 0.9.0",
+  "metapub >= 0.5.12",
+  "pydantic >= 2.9.0",
+  "pydantic-settings >= 2.4.0",
+  "marimo>=0.8.20",
+  "seaborn>=0.13.2",
 ]
-
-[project.optional-dependencies]
-evaluate = ["alignscore@git+https://github.com/yuh-zha/AlignScore"]
 
 [tool.setuptools]
 packages = ["genraitor"]
 
 [project.optional-dependencies]
 dev = ["ruff>=0.5.6", "pytest >= 8.3.3", "mypy >= 1.11.2"]
-
+gpu = [
+  "bitsandbytes >= 0.42.0",
+  "flash-attn >= 2.6.3",
+  "nvidia-cudnn-cu12 >= 8.0.0.0",
+]
+eval = ["alignscore@git+https://github.com/yuh-zha/AlignScore"]
 
 [tool.mypy]
 python_version = "3.12"
