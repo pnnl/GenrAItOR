@@ -39,7 +39,7 @@ The resulting Llama 3-RAFT model accepts queries about biomolecules and returns 
 
 Advances in instrumentation have led to the increased and rapid collection of multiple ‘omics data (e.g., proteomics, genomics, metabolomics), paving the way for a more holistic understanding of biological systems and the detection of mechanisms leading to pathogenesis.
 
-Several approaches have been developed that harmonize multi-omic data under unified modeling frameworks 1-3 <!--- Add citation--->. However, to interrogate these models beyond the predictions or sample groupings they generate, analysts must rely on i) variable importance methods (e.g., Shapley values4<!--- Add citation---> ) to extract the most predictive/discriminatory set of modeled biomolecules, and ii) domain scientists (e.g., biologists) to contextualize the identified features within the modeled system based on their own knowledge or awareness/review of the relevant scientific literature.
+Several approaches have been developed that harmonize multi-omic data under unified modeling frameworks (@flores_missing_2023, @picard_integration_2021, @reel_using_2021). However, to interrogate these models beyond the predictions or sample groupings they generate, analysts must rely on i) variable importance methods (e.g., Shapley values (@kuhn_7_1997)) to extract the most predictive/discriminatory set of modeled biomolecules, and ii) domain scientists (e.g., biologists) to contextualize the identified features within the modeled system based on their own knowledge or awareness/review of the relevant scientific literature.
 
 LLMs provide an opportunity to improve the efficiency of the human-dependent aspect of model interrogation described in (ii). Specifically, domain-level experts may query a LLM for biological information on the indicated biomolecules and then judge and potentially revise generated responses for relevance and accuracy.
 
@@ -49,9 +49,9 @@ Many existing LLMs are general purpose, having been trained on the vast corpora 
 
 # Methods
 
-Obtaining a domain-specific LLM is typically achieved through fine-tuning (FT) or retrieval-augmented generation (RAG). However, both approaches have limitations. FT is restricted to information within the training data but does not require context <!--- Add citation--->. RAG, on the other hand, may retrieve irrelevant contextual documents, but is more generally applicable given its access to context documents <!--- Add citation--->.
+Obtaining a domain-specific LLM is typically achieved through fine-tuning (FT) or retrieval-augmented generation (RAG). However, both approaches have limitations. FT is restricted to information within the training data but does not require context. <!-- TODO: cite --> RAG, on the other hand, may retrieve irrelevant contextual documents, but is more generally applicable given its access to context documents (@zhou_lima_2023).
 
-The RAFT approach is a combination of FT and RAG such that models can better retrieve relevant documents for queries by virtue of finetuning <!--- Add citation--->.
+The RAFT approach is a combination of FT and RAG such that models can better retrieve relevant documents for queries by virtue of finetuning (@zhang_raft_2024).
 
 An overview of our development of a RAFT model is provided by Figure 1, and more detailed steps are:
 
@@ -71,6 +71,8 @@ An overview of our development of a RAFT model is provided by Figure 1, and more
 - This score quantifies how well a response summarizes the informational content within reference document(s). The original input documents for each query were used as the reference documents in computing the align score for said query.
 
 ## Source Code
+
+<!--- We're there also general improvements made to the code base? Can we highlight those as well? --->
 
 The entire process is encapsulated into a python package and run using the built in command line interface. Each step corresponds to a set of commands that download, process and split the data, download and fine-tune an open-source LLM and evaluated the results using AlignScore.
 
@@ -92,9 +94,9 @@ The commands are configurable via flags or environment variables. The default op
 python3 -m genraitor train:raft --help
 ```
 
-This study extended the python packages `llama-index` (@liu_llamaindex_2022) and `AlignScore` (@zha_alignscore_2023) in the following ways:
+In addition to wrapping data processing, model training and result evaluation into a single python package, this study extended the python packages `llama-index` (@liu_llamaindex_2022) and `AlignScore` (@zha_alignscore_2023) in the following ways:
 
-- We modified the `llama-index-packs-raft-dataset` to allow configurable system prompts when generating questions for each chunk of the RAG documents. This allowed us to experiment with prompt engineering to improve the relevance of the generated questions to each document.
+- We modified the `llama-index` plugin `llama-index-packs-raft-dataset` to allow configurable system prompts when generating questions for each chunk of the RAG documents. This allowed us to experiment with prompt engineering to improve the relevance of the generated questions to each document.
 - We modified the source code for the function `get_chunks` to respect the parameter `chunk_size` when parsing the RAG documents. This modification allowed us to optimize the length of text each RAG document used for training.
 - We modified relaxed the dependency requirements for the `AlignScore` package to allow the use of `pytorch` version 2.0. This significantly reduced compatibility issues using more recent models and data formats and allowed us to use a single codebase for the entire project.
 
@@ -110,8 +112,6 @@ While both distributions appear largely similar, it should be noted that:
 Jointly, these results indicate that the RAFT model more typically generates responses that are marginally better aligned with the truth.
 
 ![Distribution of Align Scores for the RAFT-Llama 3 (“Finetuned”) and the RAG-Llama3 model.](images/results.png){#fig:results}
-
-<!--- We're there also general improvements made to the code base? Can we highlight those as well? --->
 
 # Lessons Learned
 
@@ -129,10 +129,14 @@ Our work found comparable performance between RAFT and RAG implementations of Ll
 
 The align scores of each approach indicate a similar ability to summarize the original input documents that contain the information of interest, thereby demonstrating some promise in either approach for service as an AI-assistant to the inquiring ‘omics expert.
 
-Importantly, these results were achieved based on synthetically generated data. These synthetic data were not verified for their fidelity to source truth, and thus it is entirely possible that better results may be obtained through a more involved curation of training data led by biological experts. <!--- Can we soften this discussion point? Also, what can we discuss that was an improvement?--->
+Importantly, these results were achieved based on synthetically generated data. These synthetic data were not verified for their fidelity to source truth, and thus it is entirely possible that better results may be obtained through a more involved curation of training data led by biological experts.
+
+<!--- Can we soften this discussion point? Also, what can we discuss that was an improvement?--->
 
 # Acknowledgements
 
-We acknowledge contributions from <!---Include GenAI investments--->
+We acknowledge contributions from
+
+<!---Include GenAI investments--->
 
 # References
