@@ -39,9 +39,9 @@ The resulting Llama 3-RAFT model accepts queries about biomolecules and returns 
 
 Advances in instrumentation have led to the increased and rapid collection of multiple ‘omics data (e.g., proteomics, genomics, metabolomics), paving the way for a more holistic understanding of biological systems and the detection of mechanisms leading to pathogenesis.
 
-Several approaches have been developed that harmonize multi-omic data under unified modeling frameworks (@flores_missing_2023, @picard_integration_2021, @reel_using_2021). However, to interrogate these models beyond the predictions or sample groupings they generate, analysts must rely on i) variable importance methods (e.g., Shapley values (@kuhn_7_1997)) to extract the most predictive/discriminatory set of modeled biomolecules, and ii) domain scientists (e.g., biologists) to contextualize the identified features within the modeled system based on their own knowledge or awareness/review of the relevant scientific literature.
+Several approaches have been developed that harmonize multi-omic data under unified modeling frameworks (@flores_missing_2023, @picard_integration_2021, @reel_using_2021, @rohart2017mixomics). However, to interrogate these models beyond the predictions or sample groupings they generate, analysts must rely on i) variable importance methods (e.g., Shapley values (@kuhn_7_1997)) to extract the most predictive/discriminatory set of modeled biomolecules, and ii) domain scientists (e.g., biologists) to contextualize the identified features within the modeled system based on their own knowledge or awareness/review of the relevant scientific literature.
 
-LLMs provide an opportunity to improve the efficiency of the human-dependent aspect of model interrogation described in (ii). Specifically, domain-level experts may query a LLM for biological information on the indicated biomolecules and then judge and potentially revise generated responses for relevance and accuracy.
+Recent advances in LLMs provide an opportunity to improve the efficiency of the human-dependent aspect of model interrogation described in (ii). Specifically, domain-level experts may query a LLM for biological information on the indicated biomolecules and then judge and potentially revise generated responses for relevance and accuracy.
 
 Many existing LLMs are general purpose, having been trained on the vast corpora of data available from social media and other public sources. Since these foundational LLMs were trained without the domain-specific language required by ‘omic-based queries, the aim of this work is to use RAFT (@zhang_raft_2024) to update an open-source, foundational LLM so that it may serve as an AI-assistant to the domain expert in their contextualization of important modeled features.
 
@@ -49,7 +49,7 @@ Many existing LLMs are general purpose, having been trained on the vast corpora 
 
 # Methods
 
-Obtaining a domain-specific LLM is typically achieved through fine-tuning (FT) or retrieval-augmented generation (RAG). However, both approaches have limitations. FT is restricted to information within the training data but does not require context. <!-- TODO: cite --> RAG, on the other hand, may retrieve irrelevant contextual documents, but is more generally applicable given its access to context documents (@zhou_lima_2023).
+Obtaining a domain-specific LLM is typically achieved through fine-tuning (FT) or retrieval-augmented generation (RAG). However, both approaches have limitations. FT is restricted to information within the training data but does not require context. RAG, on the other hand, may retrieve irrelevant contextual documents, but is more generally applicable given its access to context documents (@zhou_lima_2023).
 
 The RAFT approach is a combination of FT and RAG such that models can better retrieve relevant documents for queries by virtue of finetuning (@zhang_raft_2024).
 
@@ -61,12 +61,12 @@ An overview of our development of a RAFT model is provided by Figure 1, and more
 
 - Context chunks were determined by grouping semantically similar text via a text embedding approach.
 
-3. GPT-4o synthetic data was split into training evaluation subsets, with the training subset used to implement RAFT on Llama 3. An example question-answer pair used for RAFT training:
+3. GPT-4o synthetic data was split into training and evaluation subsets, with the training subset used to implement RAFT on Llama 3. An example question-answer pair used for RAFT training:
 
 - Question: “[...] </DOCUMENT> What techniques were used to establish the protein composition of chromatographic fractions?”
 - Answer: “[...] <ANSWER>: Two-dimensional polyacrylamide gel electrophoresis, N-terminal sequencing, endoproteinase Lys-C cleavage followed by peptide sequencing, comparison with ribosomal protein databases, and matrix-assisted laser-desorption ionization mass spectrometry (MALDI-MS).”
 
-4. The evaluation subset was used to compare the performance of the RAFT-Llama 3 to the RAG-Llama 3 via the Align Score6.
+4. The evaluation subset was used to compare the performance of the RAFT-Llama 3 to the RAG-Llama 3 via the Align Score (@zha_alignscore_2023).
 
 - This score quantifies how well a response summarizes the informational content within reference document(s). The original input documents for each query were used as the reference documents in computing the align score for said query.
 
