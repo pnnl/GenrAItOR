@@ -33,7 +33,7 @@ bibliography: refs.bib
 # Summary
 
 In this work, we use Retrieval Augmented Fine-Tuning (RAFT) to fine-tune Llama 3, a large language model (LLM), using the textual corpora of 'omics-related literature harvested from publicly available databases and abstracts.  
-The resulting Llama 3-RAFT model accepts queries about biomolecules and returns relevant biological information (e.g., reaction pathways, function) based on the user-provided context and learned patterns from the RAFT fine tuning. testing
+The resulting Llama 3-RAFT model accepts queries about biomolecules and returns relevant biological information (e.g., reaction pathways, function) based on the user-provided context and learned patterns from the RAFT fine tuning.
 
 # Introduction
 
