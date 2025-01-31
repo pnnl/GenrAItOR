@@ -2,10 +2,13 @@
 
 # Inspired from https://github.com/ShishirPatil/gorilla/tree/main/raft
 
-from typing import Any, List
+from typing import Any, List, TypedDict
 import random
 import logging
 import warnings
+
+import pickle
+import numpy as np
 
 from datasets import Dataset
 
@@ -25,7 +28,74 @@ from llama_index.core.base.llms.types import MessageRole
 
 DEFAULT_CHUNK_SIZE = 512
 DEFAULT_BREAKPOINT_PERCENTILE_THRESHOLD = 95
+DEFAULT_INSTRUCTGEN_TEMPLATE = "You are a synthetic question-answer pair generator. Given a chunk of context about some topic(s), generate %s example questions a user could ask and would be answered using information from the chunk. For example, if the given context was a Wikipedia paragraph about the United States, an example question could be 'How many states are in the United States?'. The questions should be able to be answered in a few words or less."
 
+class SentenceCombination(TypedDict):
+    sentence: str
+    index: int
+    combined_sentence: str
+    combined_sentence_embedding: List[float]
+
+class TruncatedNodeParser(SemanticSplitterNodeParser):
+    max_chunk_len: Any
+    min_chunk_len: Any
+    chars_per_token: int
+
+    def __init__(self, *args, max_chunk_len: int = 1024, min_chunk_len: int = 100, chars_per_token = 4, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.max_chunk_len = max_chunk_len
+        self.min_chunk_len = min_chunk_len
+        self.chars_per_token = chars_per_token
+
+    def _assemble_truncated_chunks(self, group: List[SentenceCombination], chunks: List = []) -> List[str]:
+        combined_text = ""
+        for g in group:
+            sent_len = len(g['sentence']) / self.chars_per_token
+            cur_len = len(combined_text) / self.chars_per_token + sent_len
+
+            if sent_len > self.max_chunk_len:
+                continue
+            elif cur_len > self.max_chunk_len:
+                if len(combined_text) / self.chars_per_token > self.min_chunk_len:
+                    chunks.append(combined_text)
+                combined_text = g['sentence']
+            else:
+                combined_text += g['sentence']
+        else:
+            if len(combined_text) / self.chars_per_token > self.min_chunk_len:
+                chunks.append(combined_text)
+
+    def _build_node_chunks(
+    self, sentences: List[SentenceCombination], distances: List[float]) -> List[str]:
+        chunks = []
+        if len(distances) > 0:
+            breakpoint_distance_threshold = np.percentile(
+                distances, self.breakpoint_percentile_threshold
+            )
+
+            indices_above_threshold = [
+                i for i, x in enumerate(distances) if x > breakpoint_distance_threshold
+            ]
+
+            # Chunk sentences into semantic groups based on percentile breakpoints
+            start_index = 0
+
+            for index in indices_above_threshold:
+                group = sentences[start_index : index + 1]
+
+                self._assemble_truncated_chunks(group, chunks)
+
+                start_index = index + 1
+
+            if start_index < len(sentences):
+                group = sentences[start_index:]
+                self._assemble_truncated_chunks(group, chunks)
+        else:
+            # If, for some reason we didn't get any distances (i.e. very, very small documents) just
+            # treat the whole document as a single node
+            chunks = [" ".join([s["sentence"] for s in sentences])]
+
+        return chunks
 
 class RAFTDatasetPack(BaseLlamaPack):
     """RAFT Dataset Generator pack."""
@@ -38,6 +108,8 @@ class RAFTDatasetPack(BaseLlamaPack):
         num_questions_per_chunk: int = 5,
         num_distract_docs: int = 3,
         chunk_size: int = DEFAULT_CHUNK_SIZE,
+        min_chunk_size: int = 100,
+        instruction_template: str = DEFAULT_INSTRUCTGEN_TEMPLATE,
         default_breakpoint_percentile_threshold=DEFAULT_BREAKPOINT_PERCENTILE_THRESHOLD,
     ):
         self.file_path = file_path
@@ -50,6 +122,8 @@ class RAFTDatasetPack(BaseLlamaPack):
         self.ds = None
         self.llm = OpenAI(temperature=0, n=1, model="gpt-4") if llm is None else llm
         self.embed_model = OpenAIEmbedding() if embed_model is None else embed_model
+        self.instruction_template = instruction_template
+        self.min_chunk_size = min_chunk_size
 
     def strip_str(self, s) -> str:
         """
@@ -105,13 +179,7 @@ class RAFTDatasetPack(BaseLlamaPack):
         messages = [
             ChatMessage(
                 role=MessageRole.SYSTEM,
-                content=f"""
-                    You are a synthetic question-answer pair generator.
-                    You are also an expert in biomolecule pathways and know all the alternative names for biomolecules used in research literature.
-                    Given a chunk of context about biomolecules and metobolic pathways, generate {x} example questions a biologist or bioinformatics expert could ask and would be answered using information from the chunk.
-                    For example, if the given context is text from a journal article, uniprot or an abstract from PudMed, an example question could be 'Does P05937 interact directly or indirectly with Q9NQA5 and what is the nature of that interaction?'
-                    The questions should be able to be answered in a few words or less.
-                    """,
+                content=self.instruction_template % x,
             ),
             ChatMessage(role=MessageRole.USER, content=str(chunk)),
         ]
@@ -129,20 +197,20 @@ class RAFTDatasetPack(BaseLlamaPack):
 
         return questions
 
-    def get_chunks(self, file_path: str, chunk_size: int) -> List[str]:
+    def get_chunks(self, file_path: str, max_chunk_size: int, min_chunk_size: int) -> List[str]:
         """
         Takes in a `file_path`, retrieves the document, breaks it down into chunks of size
         `chunk_size`, and returns the chunks.
         """
-        log.info(f"generating chunks: {file_path}")
-        documents = SimpleDirectoryReader(input_dir=file_path).load_data()
-        splitter = SemanticSplitterNodeParser(
+        documents = SimpleDirectoryReader(input_files=[file_path]).load_data()
+        splitter = TruncatedNodeParser(
             buffer_size=1,
             breakpoint_percentile_threshold=self.default_breakpoint_percentile_threshold,
             embed_model=self.embed_model,
+            max_chunk_len=max_chunk_size,
+            min_chunk_len=min_chunk_size
         )
         nodes = splitter.get_nodes_from_documents(documents)
-        log.info(f"finished: {len(nodes)} nodes created")
 
         return [node.get_content() for node in nodes]
 
@@ -217,18 +285,28 @@ class RAFTDatasetPack(BaseLlamaPack):
             else:
                 self.ds = self.ds.add_item(datapt)
 
-    def run(self) -> Any:
+    def run(self, checkpoint_path = None, chunks = None, save_chunks_path = None) -> Any:
         """Run the pipeline."""
-        chunks = self.get_chunks(self.file_path, self.chunk_size)
+        if chunks is None:
+            chunks = self.get_chunks(self.file_path, self.chunk_size, self.min_chunk_size)
+
+            if save_chunks_path is not None:
+                pickle.dump(chunks, open(save_chunks_path, 'wb'))
+
+        logging.info(f"Number of chunks created: {len(chunks)}")
 
         self.num_distract_docs = (
             min(self.num_distract_docs, len(chunks)) - 1
         )  # should be less than number of chunks/ nodes created
 
         for index, chunk in enumerate(chunks):
-            log.info(f"processing chunk: {index}")
+            logging.info(f"Processing chunk: {index}")
             self.add_chunk_to_dataset(
                 chunks, chunk, self.num_questions_per_chunk, self.num_distract_docs
             )
+
+            if index % 100 == 0 and index > 0 and checkpoint_path is not None:
+                logging.info(f"Completed {index} chunks, saving checkpoint")
+                self.ds.save_to_disk(checkpoint_path)
 
         return self.ds

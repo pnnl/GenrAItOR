@@ -1,0 +1,18 @@
+name: raft
+  - conda-forge
+dependencies:
+  - python=3.12
+  - isort
+  - pip
+  - tqdm
+  - pip:
+    - llama-index
+    - llama-index-packs-raft-dataset
+    - llama-index-llms-huggingface
+    - llama-index-llms-azure-openai
+    - llama-index-embeddings-azure-openai
+    - llama-index-embeddings-huggingface
+    - torch
+    - transformers==4.43.4
+    - openai
+    - metapub

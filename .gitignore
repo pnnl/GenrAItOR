@@ -1,6 +1,7 @@
 .DS_STORE
 lib/
 notes/
+untracked/
 
 !genraitor/data/
 

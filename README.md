@@ -93,6 +93,31 @@ python3 -m genraitor data:rag --uniprot_path data/training/uniprot.parquet --sav
 
 ```
 
+You can also use the retrieval functions in `genraitor/rag/uniprot_api.py` to get context from uniprot Accession ID's and construct context as in `examples/create_context.qmd`.
+
+### RAFT Dataset
+Once you have used the above to create a text file of context, you can use our modified `RAFTDatasetPack` class to create synthetic question-answer pairs about chunks of that context.
+
+You will need an OpenAI API key as well as a huggingface API key.  The entrypoint is in `bin/raft-dataset.py`.  An example usage:
+
+```
+export HF_TOKEN=<your-hf-token>
+export OPENAI_API_KEY=<your-oai-key>
+
+python raft-dataset.py \
+--embed local \
+--context_path /path/to/context.txt \
+--output_path /path/to/save_data.hf
+```
+
+See `python raft-dataset.py --help` for more options.  The output huggingface dataset can be loaded like so:
+
+```python
+from datasets import load_from_disk
+
+dataset = load_from_disk('/path/to/hf/dataset/folder')
+```
+
 ## RAG Model Inference
 
 To run the rag model:
