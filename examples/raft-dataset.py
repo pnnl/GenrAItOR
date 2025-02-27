@@ -61,7 +61,7 @@ def main(args):
             # model_kwargs = {"device_map":"auto"}
         )
 
-    raft_dataset = BioRAFTDatasetPack(
+    raft_dataset = RAFTDatasetPack(
         instruction_template = CUSTOM_INSTRUCTIONS,
         file_path = args.context_path, 
         llm = llm, 
