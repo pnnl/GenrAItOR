@@ -1,12 +1,14 @@
 from typing import Optional
 
+from enum import Enum
+
 import structlog
 from pydantic import BaseModel, Extra, Field
 from pydantic_settings import BaseSettings
 
 
 class VendorConfig(BaseModel):
-    hf_token: str = Field(alias="HF_TOKEN")
+    hf_token: Optional[str] = Field(None, alias="HF_TOKEN")
     ncbi_api_key: Optional[str] = Field(None, alias="NCBI_API_KEY")
     path: Optional[str] = Field(None, alias="PATH")
     ld_library_path: Optional[str] = Field(None, alias="LD_LIBRARY_PATH")
@@ -24,6 +26,12 @@ class PathConfig(BaseModel):
     rag_data: str = "/path/to/ragdata"
     rag_cache: str = "/path/to/ragdata.db"
 
+class EmbedModelNames(str, Enum):
+    LLAMA3_1 = "llama3_1"
+    BIONLP_BERT = "bionlp_pubmed"
+    CAMBRIDGE_PUBMED = "cambridge_pubmed"
+    MICROSOFT_PUBMED = "microsoft_pubmed"
+    OPENAI = "openai"
 
 class ModelConfig(BaseModel):
     name: str = "meta-llama/Meta-Llama-3-8B"
@@ -32,8 +40,8 @@ class ModelConfig(BaseModel):
     api_key: str = ""
     quantization_type: str = "fp4"  # or "nf4"
     device_map: str = "auto"  # or "cuda"
-
-
+    embed_model_names: Enum = EmbedModelNames
+    
 class TrainingConfig(BaseModel):
     attention: str = "flash_attention_2"  # or "eager"
 

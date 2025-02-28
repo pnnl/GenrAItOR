@@ -5,8 +5,6 @@ from pathlib import Path
 import click
 
 from ..conf import env, log
-from ..raft import train
-
 
 @click.group()
 def cli():
@@ -65,6 +63,7 @@ def evaluate(adapter_path, base_model, raft_path, save_path, batch_size):
     import duckdb
 
     from ..evaluate import align
+    from ..raft import train
 
     match raft_path.suffix:
         case ".hf":

@@ -1,8 +1,18 @@
 from pathlib import Path
 import duckdb
 
+DEFAULT_QUERY = """
+SELECT
+    'AH1' as pathogen
+    ,feature as name
+    ,shapley_value as shapley
+    ,rank() over(order by shapley_value desc) as rank
+FROM data
+WHERE feature != 'Time'
+LIMIT 20 
+"""
 
-def top_shapley(experiment_path: Path):
+def top_shapley(experiment_path: Path, query:str = DEFAULT_QUERY):
     data_path = [
         d
         for d in experiment_path.iterdir()
@@ -17,14 +27,5 @@ def top_shapley(experiment_path: Path):
 
     data = duckdb.read_csv(str(data_path))
     duckdb.register("data", data)
-    query = """
-        SELECT
-            'AH1' as pathogen
-            ,feature as name
-            ,shapley_value as shapley
-            ,rank() over(order by shapley_value desc) as rank
-        FROM data
-        WHERE feature != 'Time'
-        LIMIT 20 
-    """
+
     return duckdb.sql(query).df()

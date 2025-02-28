@@ -62,7 +62,7 @@ def merge(adapter_path, base_model, save_path):
     "--uniprot_ids",
     type=str,
     default=None,
-    help="A file containing a list of uniprot ids to fetch context for with one uniprot id per line as Accession ID's.",
+    help="Path to a file containing a list of uniprot ids to fetch context for with one uniprot id per line as Accession ID's.",
 )
 @click.option(
     "--postprocess_results",
@@ -114,13 +114,7 @@ def context(
             f.write(full_context)
 
 
-
-
-
-
-
 @cli.command("raft:data")
-# translate the argparses to click options:
 @click.option(
     "--embed",
     type=click.Choice(["cloud", "local"]),
