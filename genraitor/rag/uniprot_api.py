@@ -172,7 +172,7 @@ def fetch_context(uniprots, secondary_context = False, max_characters=16_000, ex
     query_results = fetch_uniprot(uniprots, query_body = uniprot_query, **kwargs)
 
     all_context = {}
-
+    
     # For each query result
     for up, qr in zip(uniprots, query_results):
         logging.info(f"Retrieving context for uniprot id {up}")
@@ -195,16 +195,16 @@ def fetch_context(uniprots, secondary_context = False, max_characters=16_000, ex
             else:
                 logging.warning(f"Field {field} not found in extraction function map.")
 
-        abstract_len = 0
-
-        # pointless, it's already a list...we're just re-appending to another list...just check the length.
-        for i, a in enumerate(abstracts):
-            if a is None:
-                continue
-            if (abstract_len + len(a)) > max_characters:
-                break
-            abstract_len += len(a)
-        
-        all_context.setdefault('abstracts', []).append(abstracts[:i])
+        if len(abstracts) > 0:
+            abstract_len = 0
+            # pointless, it's already a list...we're just re-appending to another list...just check the length.
+            for i, a in enumerate(abstracts):
+                if a is None:
+                    continue
+                if (abstract_len + len(a)) > max_characters:
+                    break
+                abstract_len += len(a)
+            
+            all_context.setdefault('abstracts', []).append(abstracts[:i])
 
     return all_context

@@ -60,7 +60,51 @@ pip install -e .
 
 # Running The Code
 
+The code is presented as a python package as well as a CLI using the `click` package.  The CLI is invoked by running:
+
+```bash
+python -m genraitor <cli-entrypoint>
+```
+
+Help documentation for each entrypoint can be accessed by running:
+
+```
+python -m genraitor <cli-entrypoint> --help
+```
+
+Some of the main steps in carrying out our fine-tuning procedure and their associated endpoints are described below.
+
 ## Generating Data
+
+Our synthetic data processing pipeline starts with a set of uniprot identifiers you are interested in.  You can collect these beforehand using variable selections methods such as LASSO, or Shapley values.
+
+### Option 1:  From a file of UniProt ID's
+
+Start with a file containing uniprot [Accession numbers](https://www.uniprot.org/help/accession_numbers), one per line, as below:
+
+```
+# data/examples/uniprots.txt
+Q9BRJ2
+P09758
+P84085
+P08708
+P46013
+P02768
+P05026
+P14618
+```
+
+Then provide this file to the `raft:context` cli endpoint.  This file will also default to some example uniprot ids when no file is provided.
+
+```bash
+python -m genraitor raft:context \
+--uniprot_ids=./data/examples/uniprots.txt \
+--output_dir=./data
+```
+
+This will produce two files in `./data`, one (`uniprot_context_results...`) with the raw results of querying uniprot for pathway information and abstracts, and the other (`uniprot_context_postprocessed...`) with context derived from those results and usable by the `RAFTDatasetPack` class from `llama-index`.
+
+### Option 2:  From a file with scores:
 
 To generate the top uniprot ids (the directory `data/deepimv` should exist and contain a .csv file starting with 'shap', and containing 'AH1' and 'pro'):
 
@@ -93,29 +137,30 @@ python3 -m genraitor data:rag --uniprot_path data/training/uniprot.parquet --sav
 
 ```
 
-You can also use the retrieval functions in `genraitor/rag/uniprot_api.py` to get context from uniprot Accession ID's and construct context as in `examples/create_context.qmd`.
-
-### RAFT Dataset
+## RAFT Dataset
 Once you have used the above to create a text file of context, you can use our modified `RAFTDatasetPack` class to create synthetic question-answer pairs about chunks of that context.
 
-You will need an OpenAI API key as well as a huggingface API key.  The entrypoint is in `bin/raft-dataset.py`.  An example usage:
+You will need an OpenAI API key as well as a huggingface API key.  The entrypoint for the cli is `raft:data`, or there is an example script at `examples/raft-dataset.py`.
+
+To run from the cli do:
 
 ```
+# set keys
 export HF_TOKEN=<your-hf-token>
 export OPENAI_API_KEY=<your-oai-key>
 
-python raft-dataset.py \
+python -m genraitor raft:data \
 --embed local \
 --context_path /path/to/context.txt \
---output_path /path/to/save_data.hf
+--output_path /path/to/save_data_folder
 ```
 
-See `python raft-dataset.py --help` for more options.  The output huggingface dataset can be loaded like so:
+See `python -m raft:data --help` for more options.  The resulting huggingface dataset is a folder of files and can be loaded as below:
 
 ```python
 from datasets import load_from_disk
 
-dataset = load_from_disk('/path/to/hf/dataset/folder')
+dataset = load_from_disk('/path/to/save_data_folder')
 ```
 
 ## RAG Model Inference

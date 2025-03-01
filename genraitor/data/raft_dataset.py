@@ -42,7 +42,7 @@ class TruncatedNodeParser(SemanticSplitterNodeParser):
     chars_per_token: int
 
     def __init__(self, *args, max_chunk_len: int = 1024, min_chunk_len: int = 100, chars_per_token = 4, **kwargs):
-        super().__init__(*args, **kwargs)
+        super().__init__(*args, max_chunk_len = max_chunk_len, min_chunk_len = min_chunk_len, chars_per_token = chars_per_token, **kwargs)
         self.max_chunk_len = max_chunk_len
         self.min_chunk_len = min_chunk_len
         self.chars_per_token = chars_per_token

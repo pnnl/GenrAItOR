@@ -173,17 +173,7 @@ def prepare_dataset(training_path):
         return row
 
     match training_path.suffix:
-        case ".hf":
-            from datasets import load_from_disk
-
-            dataset = load_from_disk(training_path)
-
-            log.info("mapping dataset")
-            dataset = dataset.rename_column("instruction", "prompt")
-            dataset = dataset.rename_column("cot_answer", "completion")
-
-        case _:
-
+        case ".jsonl":
             dataset = load_dataset(
                 "json",
                 data_files={"train": str(training_path)},
@@ -196,6 +186,14 @@ def prepare_dataset(training_path):
                 num_proc=os.cpu_count() // 2,
                 batched=False,
             )
+        case _:
+            from datasets import load_from_disk
+
+            dataset = load_from_disk(training_path)
+
+            log.info("mapping dataset")
+            dataset = dataset.rename_column("instruction", "prompt")
+            dataset = dataset.rename_column("cot_answer", "completion")
 
     log.info("shuffling dataset")
     dataset = dataset.shuffle(seed=42)

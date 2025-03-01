@@ -30,7 +30,7 @@ def cli():
     "--model_name",
     "--model",
     default="meta-llama/Meta-Llama-3-8B",
-    help="HF model to use as the base",
+    help="HF model to use as the base, either a name referencing a huggingface model, or a path to a local huggingface model folder",
     show_default=True,
 )
 @click.option(

@@ -87,9 +87,9 @@ def context(
 
     if uniprot_ids is not None:
         with open(uniprot_ids) as f:
-            uniprot_ids = f.readlines()
+            uniprot_ids = f.read().splitlines()
     else:
-        log.info("No uniprot id file provided, using example uniprot ids")
+        log.info(f"No uniprot id file provided, using example uniprot ids: {','.join(EXAMPLE_UNIPROTS)}")
         uniprot_ids = EXAMPLE_UNIPROTS
         
     results = fetch_context(uniprot_ids)
@@ -125,7 +125,7 @@ def context(
     "--hf_embed_model",
     type=str,
     default="Alibaba-NLP/gte-large-en-v1.5",
-    help="A huggingface embedding model",
+    help="The name of a huggingface embedding model",
 )
 @click.option(
     "--embed_model_cache",
@@ -148,6 +148,7 @@ def context(
 @click.option(
     "--output_path",
     type=str,
+    default="raft-dataset.hf",
     help="The path to save the huggingface dataset produced by the raft output",
 )
 @click.option(
@@ -158,13 +159,13 @@ def context(
 @click.option(
     "--oai_key",
     type=str,
-    default=".secret",
-    help="The path to a file with a single line containing the openAI api key.",
+    default=None,
+    help="The path to a file with a single line containing the OpenAI api key.  Alternatively set OPENAI_API_KEY environment variable.",
 )
 @click.option(
     "--hf_token",
     type=str,
-    default=".hf_token",
+    default=None,
     help="The path to a file with a single line containing a huggingface access token.  Alternatively set HF_TOKEN environment variable.",
 )
 @click.option(
@@ -194,6 +195,7 @@ def make_raft_dataset(
     from genraitor.data.raft_dataset import RAFTDatasetPack
 
     if not os.environ.get("OPENAI_API_KEY"):
+        assert os.path.exists(oai_key), "OPENAI_API_KEY not set and file provided by `--oai_key` does not exist"
         with open(oai_key) as f:
             API_KEY=f.readline().strip("\n")
     else:
@@ -213,10 +215,11 @@ def make_raft_dataset(
             api_base=api_base
         )
     elif embed == "local":
-        if hf_token:
-            with open(hf_token) as f:
-                os.environ["HF_TOKEN"] = f.readline().strip("\n")
-
+        if not os.environ.get("HF_TOKEN"):
+            if hf_token:
+                with open(hf_token) as f:
+                    os.environ["HF_TOKEN"] = f.readline().strip("\n")
+            
         # Defaulting to some embedding model from HF for this.
         embed_model = HuggingFaceEmbedding(
             model_name = hf_embed_model, 
