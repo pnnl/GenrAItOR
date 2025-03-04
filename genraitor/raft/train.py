@@ -63,8 +63,8 @@ def main(
     base_model: str = env.model.name,
     new_model: str = env.model.output_name,
     strategy: TrainingStrategy = TrainingStrategy.ORPO,
+    use_bnb: bool = False
 ):
-
     dataset = prepare_dataset(training_path)
 
     # Load tokenizer
@@ -73,16 +73,25 @@ def main(
 
     # Load model
     log.info(f"loading model: {base_model}")
+
+    model_kwargs = {
+        "device_map": "auto",
+        "attn_implementation": attn_implementation,
+        "torch_dtype": torch_dtype,
+        "low_cpu_mem_usage": True
+    }
+
+    if use_bnb:
+        model_kwargs["quantization_config"] = bnb_config
+
     model = AutoModelForCausalLM.from_pretrained(
         base_model,
-        quantization_config=bnb_config,
-        device_map="auto",
-        attn_implementation=attn_implementation,
-        torch_dtype=torch_dtype,
-        low_cpu_mem_usage=True,
+        **model_kwargs
     )
     model, tokenizer = setup_chat_format(model, tokenizer)
-    model = prepare_model_for_kbit_training(model)
+
+    if use_bnb:
+        model = prepare_model_for_kbit_training(model)
 
     log.info(f"configuring trainer: {strategy}")
     _, trainer = _configure_trainer(strategy, model, tokenizer, dataset)
@@ -103,7 +112,6 @@ def _configure_trainer(strategy, model, tokenizer, dataset):
     match strategy:
         case TrainingStrategy.SFT:
             args = SFTConfig(
-                dataset_text_field="prompt",
                 learning_rate=1e-4,
                 lr_scheduler_type="linear",
                 per_device_train_batch_size=2,
@@ -119,7 +127,7 @@ def _configure_trainer(strategy, model, tokenizer, dataset):
             )
             trainer = SFTTrainer(
                 model=model,
-                args=args,  # This should reference the SFTConfig instance we created earlier
+                args=args,
                 train_dataset=dataset["train"],
                 eval_dataset=dataset["test"],
                 peft_config=peft_config,
