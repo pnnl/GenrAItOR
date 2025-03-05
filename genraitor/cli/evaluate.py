@@ -66,7 +66,17 @@ def evaluate(adapter_path, base_model, raft_path, save_path, batch_size):
     from ..raft import train
 
     match raft_path.suffix:
-        case ".hf":
+        case ".jsonl":
+            with duckdb.connect(":memory:") as conn:
+                data = conn.sql(
+                    f"""
+                    SELECT
+                        context || instruction || question as context
+                        ,cot_answer as claim
+                    FROM read_json("{raft_path}")
+                """
+                ).to_df()
+        case _:
             import pandas as pd
             from datasets import load_from_disk
 
@@ -78,16 +88,6 @@ def evaluate(adapter_path, base_model, raft_path, save_path, batch_size):
                         instruction as context
                         ,cot_answer as claim
                     FROM data
-                """
-                ).to_df()
-        case _:
-            with duckdb.connect(":memory:") as conn:
-                data = conn.sql(
-                    f"""
-                    SELECT
-                        context || instruction || question as context
-                        ,cot_answer as claim
-                    FROM read_json("{raft_path}")
                 """
                 ).to_df()
 

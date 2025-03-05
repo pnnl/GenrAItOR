@@ -78,7 +78,7 @@ Some of the main steps in carrying out our fine-tuning procedure and their assoc
 
 Our synthetic data processing pipeline starts with a set of uniprot identifiers you are interested in.  You can collect these beforehand using variable selections methods such as LASSO, or Shapley values.
 
-### Option 1:  From a file of UniProt ID's
+### Option 1:  From a file of UniProt ID's (Recommended)
 
 Start with a file containing uniprot [Accession numbers](https://www.uniprot.org/help/accession_numbers), one per line, as below:
 
@@ -294,20 +294,6 @@ Another class of training techniques use Reinforcement Learning (often called [R
 
 According to a recent blog post, the RLHF technique finetuning with [odds ratio preference optimization algorithm (ORPO)](https://arxiv.org/abs/2403.07691) works with as little as 50 unique prompts.
 There is a [TRL HuggingFace package](https://huggingface.co/docs/trl/en/orpo_trainer) that implements this technique.
-
-# Dataset
-
-## DeepIMV
-
-
-## UniProt
-
-We will focus on a single dataset to start: Proteins from [UniProt](https://www.uniprot.org/)
-
-## PubMed
-
-## LipidMaps
-
 
 # Fine Tuning
 
