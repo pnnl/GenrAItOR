@@ -94,10 +94,10 @@ P05026
 P14618
 ```
 
-Then provide this file to the `raft:context` cli endpoint.  This file will also default to some example uniprot ids when no file is provided.
+Then provide this file to the `data:context` cli endpoint.  This file will also default to some example uniprot ids when no file is provided.
 
 ```bash
-python -m genraitor raft:context \
+python -m genraitor data:context \
 --uniprot_ids=./data/examples/uniprots.txt \
 --output_dir=./data
 ```
@@ -144,7 +144,7 @@ You will need an OpenAI API key as well as a huggingface API key.  The entrypoin
 
 To run from the cli do:
 
-```
+```bash
 # set keys
 export HF_TOKEN=<your-hf-token>
 export OPENAI_API_KEY=<your-oai-key>
@@ -152,7 +152,7 @@ export OPENAI_API_KEY=<your-oai-key>
 python -m genraitor raft:data \
 --embed local \
 --context_path /path/to/context.txt \
---output_path /path/to/save_data_folder
+--output_path /path/to/raft_data
 ```
 
 See `python -m raft:data --help` for more options.  The resulting huggingface dataset is a folder of files and can be loaded as below:
@@ -160,7 +160,30 @@ See `python -m raft:data --help` for more options.  The resulting huggingface da
 ```python
 from datasets import load_from_disk
 
-dataset = load_from_disk('/path/to/save_data_folder')
+dataset = load_from_disk('/path/to/raft_data')
+```
+
+## Performing RAFT
+
+Once we have created the dataset suitable for performing RAFT, we simply point the cli target for training it to the dataset on disk.  The cli target also takes a model name to be passed to the huggingface `AutoModelForCausalLM.from_pretrained` method as well as an output path.  For certain models, such as the Llama series, you will again need a huggingface api key and have accepted the terms of service on their model page.
+
+```bash
+python -m genraitor train:raft \
+-t /path/to/raft_data \
+-m meta-llama/Meta-Llama-3.1-8B \
+-n data/finetuned
+```
+
+The fine-tuned model will be saved in data/finetuned and loadable via the huggingface interface:
+
+```python
+from transformers import (
+    AutoModelForCausalLM,
+    AutoTokenizer
+)
+
+tokenizer = AutoTokenizer.from_pretrained('./data/finetuned', padding_side="left")
+model = AutoModelForCausalLM.from_pretrained("./data/finetuned")
 ```
 
 ## RAG Model Inference
