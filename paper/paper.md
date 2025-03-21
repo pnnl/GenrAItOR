@@ -32,11 +32,11 @@ bibliography: refs.bib
 
 # Summary
 
-We present software to employ Retrieval Augmented Fine-Tuning (RAFT) to fine-tune Llama 3, a large language model (LLM), using the textual corpora of proteomics-related literature harvested from publicly available databases and abstracts.  The software is organized as a command-line interface (CLI) to abstract away tedious details in the fine-tuning process.  The resulting Llama 3-RAFT model accepts queries about biomolecules (proteins) and returns relevant biological information (e.g., reaction pathways, function) based on the user-provided context and learned patterns from the RAFT fine tuning.
+We present software to employ Retrieval Augmented Fine-Tuning (RAFT) to fine-tune Llama 3, a large language model (LLM), using the textual corpora of proteomics-related literature harvested from publicly available databases and abstracts.  The software is organized as a command-line interface (CLI) to abstract away tedious details in the fine-tuning process.  The resulting model accepts queries about biomolecules (proteins) and has been specifically fine-tuned via RAFT to robustly leverage provided biological context (e.g. text about reaction pathways or function for a particular protein) when answering questions.
 
 Recent advances in LLMs provide an opportunity to improve the efficiency of the human-dependent aspects of model interrogation, e.g. domain experts making sense of sets of biomolecules determined to be 'important' to model prediction.  Specifically, domain-level experts may query an LLM for biological information on the indicated biomolecules and draw domain-level inference that is contextualized by the knowledge contained within and relayed by the LLM.
 
-Many existing LLMs are general purpose, having been trained on the vast corpora of data available from social media and other public sources. Since these foundational LLMs were trained without the domain-specific language required by ‘omic-based queries, the aim of this work is to use RAFT [@zhang_raft_2024] to update an open-source, foundational LLM so that it may serve as an AI-assistant to the domain expert in their contextualization of important modeled features.  The RAFT approach is a special type of fine-tuning (FT) that includes context in a question-answering task where some or all of the context may be irrelevant to answering the question. By including irrelevant information within the supplied context, the RAFT approach is more robust to the presence of irrelevant context relative to a traditional retrieval-augmented generation (RAG) system [@zhang_raft_2024].  We present a software package/CLI that performs the required steps in RAFT from data collection to training to enable other interested researchers to develop their own AI-assistants for biological research.  
+Many existing LLMs are general purpose, having been trained on the vast corpora of data available from social media and other public sources. Since these foundational LLMs were trained without the domain-specific language required by ‘omics-based queries, the aim of this work is to use RAFT [@zhang_raft_2024] to update an open-source, foundational LLM so that it may serve as an AI-assistant to the domain expert in their contextualization of important modeled features.  The RAFT approach is a special type of fine-tuning (FT) that includes context in a question-answering task where some or all of the context may be irrelevant to answering the question. By including irrelevant information within the supplied context, the RAFT approach is more robust to the presence of irrelevant context relative to a traditional retrieval-augmented generation (RAG) system [@zhang_raft_2024].  We present a software package/CLI that performs the required steps in RAFT from data collection to training to enable other interested researchers to develop their own AI-assistants for biological research.  
 
 ![Genraitor Process Overview. Synthetic training data are generated using ChatGPT-4o. These question-answer-context triplicates are then used to fine-tune Llama 3 in a RAFT context. The output RAFT model is then implemented/evaluated on a hold-out set of generated triplicates.](images/workflow.png){#fig:workflow}
 
@@ -52,9 +52,9 @@ An overview of our development of a RAFT model is provided by [Figure 1](#fig:wo
 
 3. Context is prepended to the Q-A pair by sampling random 'distractor' documents and also including the context used to generate the Q-A pair with some probability.  This creates contexts with varied levels of relevancy.
 
-4. GPT-4o synthetic data was split into training and evaluation subsets, with the training subset used to implement RAFT on Llama 3. 
+4. A training split of the GPT-4o synthetic data with added context was used to fine tune Llama 3 in a standard text completion task.
 
-5. The evaluation subset was used to compare the performance of the RAFT-Llama 3 to the RAG-Llama 3 via the Align Score [@zha_alignscore_2023].
+Additionally, we use an evaluation subset to compare the performance of the RAFT-Llama 3 to base Llama 3 via the AlignScore [@zha_alignscore_2023].
 
 ![Example of a QA-pair generated using sampled context. The \[... CONTEXT ...\] chunk is a collection of documents that may or may not contain the text used to generate the QA-pair](images/qapair.png){#fig:qapair}
 
@@ -72,7 +72,7 @@ python -m genraitor data:context \
 
 This will produce two files in `./data`, one (`uniprot_context_results...`) with the raw results of querying uniprot for pathway information and abstracts, and the other (`uniprot_context_postprocessed...`) with context derived from those results and usable by the `RAFTDatasetPack` class from `llama-index`.
 
-Once you have the text file of context, you can use our modified `RAFTDatasetPack` class to create synthetic question-answer pairs about chunks of that context.  You will need an OpenAI API key as well as a huggingface API key if you use a local embedding model.  The entrypoint for the cli is `raft:data`, and can be run as below using a huggingface embedding model and GPT-4o through the OpenAI api.
+Once you have the text file of context, you can use our modified `RAFTDatasetPack` class to create synthetic question-answer pairs about chunks of that context.  You will need an OpenAI API key as well as a Hugging Face (huggingface) API key if you use a local embedding model.  The entrypoint for the cli is `raft:data`, and can be run as below using a huggingface transformers [@wolf-etal-2020-transformers] embedding model and GPT-4o through the OpenAI api.
 
 ```bash
 # set keys
@@ -93,7 +93,7 @@ from datasets import load_from_disk
 dataset = load_from_disk('/path/to/save_data_folder')
 ```
 
-To perform RAFT using this dataset, we simply point the cli target `train:raft` for training to the dataset on disk.  The cli target also takes a model name to be passed to the huggingface `AutoModelForCausalLM.from_pretrained` method as well as an output path.  For certain models, such as the Llama series, you will again need a huggingface api key and have accepted the terms of service on their model page.
+To perform RAFT using this dataset, we simply point the cli target `train:raft` for training to the dataset on disk.  The cli target also takes a model name to be passed to the huggingface transformers `AutoModelForCausalLM.from_pretrained` method as well as an output path.  For certain models, such as the Llama series, you will again need a huggingface api key and have accepted the terms of service on their model page.
 
 ```bash
 python -m genraitor train:raft \
@@ -102,7 +102,7 @@ python -m genraitor train:raft \
 -n data/finetuned
 ```
 
-The fine-tuned model will be saved in data/finetuned and loadable via the huggingface interface:
+The fine-tuned model will be saved in data/finetuned and loadable via the huggingface transformers interface:
 
 ```python
 from transformers import (
@@ -127,14 +127,14 @@ In addition to wrapping data processing, model training and result evaluation in
 
 ## Results
 
-We evalute our methods output through the comparison of align scores. In Figure 2 we compare the distribution of the align scores for the RAFT-Llama 3 model (in blue) and the base Llama 3 model. While both distributions appear largely similar, it should be noted that:
+We evaluate our method's output through the comparison of AlignScores on a text completion task with held out question-context-answer triplets. In Figure 2 we compare the distribution of the AlignScore for the RAFT-Llama 3 model (in blue) and the base Llama 3 model. While both distributions appear largely similar, it should be noted that:
 
-- Mean align score is slightly improved in the RAFT model relative to the base Llama 3
-- In line with the improved mean, the RAFT distribution of align scores is more left skewed
+- Mean AlignScore is slightly improved in the RAFT model relative to the base Llama 3
+- In line with the improved mean, the RAFT distribution of AlignScores is more left skewed
 
-Jointly, these results indicate that the RAFT model more typically generates responses that are marginally better aligned with the truth. Furthermore the software package provided herein provides a streamlines method to implemnt the required steps in RAFT from data collection to training to enable other  researchers to develop a RAFT-Llama 3 model. 
+Jointly, these results indicate that the RAFT model more typically generates responses that are marginally better aligned with the expected answer. Furthermore the software package provided herein provides a streamlined method to implement the required steps in RAFT from data collection to training to enable other researchers to develop a RAFT-Llama 3 model. 
 
-![Distribution of Align Scores for the RAFT-Llama 3 (“Finetuned”) and the RAG-Llama3 model.](images/results.png){#fig:results}
+![Distribution of AlignScores for the RAFT-Llama 3 (“Finetuned”) and the base Llama3 model.](images/results.png){#fig:results}
 
 # Discussion/Limitations
 
@@ -146,15 +146,9 @@ Though we provide an easy-to-use interface to the RAFT process, some challenges 
 
 3. **Dependency Mismatches.**  There are many dependencies in any LLM fine-tuning project, even with good tracking of python dependencies, there will be issues such as CUDA version mismatches, certain package versions not being available on particular operating systems, etc.  For example, to use the public implementation of AlignScore, the package needed to be updated to work with newer versions of PyTorch.
 
-Our work found comparable performance between RAFT and RAG implementations of Llama 3 on ‘omics-based queries, with the RAFT implementation showing marginal improvement.
-
-The align scores of each approach indicate a similar ability to summarize the original input documents that contain the information of interest, thereby demonstrating some promise in either approach for service as an AI-assistant to the inquiring ‘omics expert.
-
-Importantly, these results were achieved based on synthetically generated data. These synthetic data were not verified for their fidelity to source truth, and thus it is entirely possible that better results may be obtained through a more involved curation of training data led by biological experts.
+Our work found comparable performance between RAFT and base implementations of Llama 3 on ‘omics-based queries, with the RAFT implementation showing marginal improvement in AlignScore.  Importantly, these results were achieved based on synthetically generated data. These synthetic data were not verified for their fidelity to source truth, and thus it is entirely possible that better results may be obtained through a more involved curation of training data led by biological experts.
 
 Our software package allows users to create context for performing RAFT in the proteomics domain given a list of proteins of interest.  We hope this provides an easy-to-use base for researchers to explore the relationships between proteins identified in their experiments and expand the use of RAFT to different domain areas.
-
-<!--- Can we soften this discussion point? Also, what can we discuss that was an improvement?--->
 
 # Acknowledgements
 
@@ -163,7 +157,3 @@ We acknowledge contributions from
 <!---Include GenAI investments--->
 
 # References
----
-bibliography: refs.bib
-nocite: "@*"
----
