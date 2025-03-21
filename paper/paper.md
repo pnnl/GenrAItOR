@@ -163,4 +163,7 @@ We acknowledge contributions from
 <!---Include GenAI investments--->
 
 # References
-bibliography: refs.bib
+---
+bibliography: sample.bib
+nocite: "@*"
+---
