@@ -164,6 +164,6 @@ We acknowledge contributions from
 
 # References
 ---
-bibliography: sample.bib
+bibliography: refs.bib
 nocite: "@*"
 ---
