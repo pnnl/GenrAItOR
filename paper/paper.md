@@ -6,11 +6,11 @@ tags:
   - LLM
   - proteins
 authors:
-  - name: Matthew Jensen
-    orcid: 0000-0000-0000-0000
-    affiliation: 1
   - name: Daniel Claborne
     orcid: 0000-0001-5293-3628
+    affiliation: 1
+  - name: Matthew Jensen
+    orcid: 0000-0000-0000-0000
     affiliation: 1
   - name: Javier E. Flores
     orcid: 0000-0002-1550-1655
@@ -34,9 +34,9 @@ bibliography: refs.bib
 
 We present software to employ Retrieval Augmented Fine-Tuning (RAFT) to fine-tune Llama 3, a large language model (LLM), using the textual corpora of proteomics-related literature harvested from publicly available databases and abstracts.  The software is organized as a command-line interface (CLI) to abstract away tedious details in the fine-tuning process.  The resulting Llama 3-RAFT model accepts queries about biomolecules (proteins) and returns relevant biological information (e.g., reaction pathways, function) based on the user-provided context and learned patterns from the RAFT fine tuning.
 
-Recent advances in LLMs provide an opportunity to improve the efficiency of the human-dependent aspects of model interrogation, e.g. domain experts making sense of sets of biomolecules determined to be 'important' to model prediction.  Specifically, domain-level experts may query an LLM for biological information on the indicated biomolecules and then judge and potentially revise generated responses for relevance and accuracy.
+Recent advances in LLMs provide an opportunity to improve the efficiency of the human-dependent aspects of model interrogation, e.g. domain experts making sense of sets of biomolecules determined to be 'important' to model prediction.  Specifically, domain-level experts may query an LLM for biological information on the indicated biomolecules and draw domain-level inference that is contextualized by the knowledge contained within and relayed by the LLM.
 
-Many existing LLMs are general purpose, having been trained on the vast corpora of data available from social media and other public sources. Since these foundational LLMs were trained without the domain-specific language required by ‘omic-based queries, the aim of this work is to use RAFT (@zhang_raft_2024) to update an open-source, foundational LLM so that it may serve as an AI-assistant to the domain expert in their contextualization of important modeled features.  The RAFT approach is a special type of fine-tuning (FT) that includes context in a question-answering task where some or all of the context may be irrelevant to answering the question in an effort to make a model that is more robust to varying relevancy of context in a retrieval-augmented generation (RAG) system (@zhang_raft_2024).  We present a software package/CLI that performs the required steps in RAFT from data collection to training to enable other interested researchers to explore this technique in the biology domain.  
+Many existing LLMs are general purpose, having been trained on the vast corpora of data available from social media and other public sources. Since these foundational LLMs were trained without the domain-specific language required by ‘omic-based queries, the aim of this work is to use RAFT (@zhang_raft_2024) to update an open-source, foundational LLM so that it may serve as an AI-assistant to the domain expert in their contextualization of important modeled features.  The RAFT approach is a special type of fine-tuning (FT) that includes context in a question-answering task where some or all of the context may be irrelevant to answering the question. By including irrelevant information within the supplied context, the RAFT approach is more robust to the presence of irrelevant context relative to a traditional retrieval-augmented generation (RAG) system (@zhang_raft_2024).  We present a software package/CLI that performs the required steps in RAFT from data collection to training to enable other interested researchers to develop their own AI-assistants for biological research.  
 
 ![Genraitor Process Overview. Synthetic training data are generated using ChatGPT-4o. These question-answer-context triplicates are then used to fine-tune Llama 3 in a RAFT context. The output RAFT model is then implemented/evaluated on a hold-out set of generated triplicates.](images/workflow.png){#fig:workflow}
 
@@ -50,7 +50,7 @@ An overview of our development of a RAFT model is provided by [Figure 1](#fig:wo
 
 2. These data were provided as chunks of context to GPT-4o with instructions to generate question-answer pairs to use as synthetic data.  Context chunks are determined by grouping semantically similar text via a text embedding approach.  An example question-answer pair used for RAFT training is given in [Figure 2](#fig:qapair).
 
-3. Context is prepended to the Q-A pair by sampling random 'distractor' documents and also including the context used to generate the Q-A pair with some probably.  This creates contexts with varied levels of relevancy.
+3. Context is prepended to the Q-A pair by sampling random 'distractor' documents and also including the context used to generate the Q-A pair with some probability.  This creates contexts with varied levels of relevancy.
 
 4. GPT-4o synthetic data was split into training and evaluation subsets, with the training subset used to implement RAFT on Llama 3. 
 
@@ -59,8 +59,6 @@ An overview of our development of a RAFT model is provided by [Figure 1](#fig:wo
 ![Example of a QA-pair generated using sampled context. The \[... CONTEXT ...\] chunk is a collection of documents that may or may not contain the text used to generate the QA-pair](images/qapair.png){#fig:qapair}
 
 # Example Implementation
-
-<!--- We're there also general improvements made to the code base? Can we highlight those as well? --->
 
 The entire process is encapsulated into a python package and run using the built in command line interface.  After installing the package and its dependencies as described in the README, we can proceed to retrieve some context and perform RAFT.  In `data/examples/uniprots.txt` you will find several protein identifiers known as Accession numbers.  These will be used to search the uniprot database and retrieve article abstracts as well as information about protein-protein interactions and associated pathways.  
 
@@ -129,14 +127,12 @@ In addition to wrapping data processing, model training and result evaluation in
 
 ## Results
 
-Figure 2 summarizes our work’s main comparison of interest. The distribution of the align score for the RAFT-Llama 3 model is depicted (in blue) above the corresponding distribution for the base Llama 3 model.
-
-While both distributions appear largely similar, it should be noted that:
+We evalute our methods output through the comparison of align scores. In Figure 2 we compare the distribution of the align scores for the RAFT-Llama 3 model (in blue) and the base Llama 3 model. While both distributions appear largely similar, it should be noted that:
 
 - Mean align score is slightly improved in the RAFT model relative to the base Llama 3
 - In line with the improved mean, the RAFT distribution of align scores is more left skewed
 
-Jointly, these results indicate that the RAFT model more typically generates responses that are marginally better aligned with the truth.
+Jointly, these results indicate that the RAFT model more typically generates responses that are marginally better aligned with the truth. Furthermore the software package provided herein provides a streamlines method to implemnt the required steps in RAFT from data collection to training to enable other  researchers to develop a RAFT-Llama 3 model. 
 
 ![Distribution of Align Scores for the RAFT-Llama 3 (“Finetuned”) and the RAG-Llama3 model.](images/results.png){#fig:results}
 
@@ -146,7 +142,7 @@ Though we provide an easy-to-use interface to the RAFT process, some challenges 
 
 1. **Model Training/Computation Challenges.** Large context chunks were sometimes difficult to load into GPU memory, forcing us to limit the generated context size. Long training/generation times for modestly sized datasets required careful checkpointing/monitoring.  Libraries and techniques that reduce memory footprint exacerbate dependency issues.
 
-2.  **Domain Specificity to Proteomics.**  Our package is currently very focused on obtaining context related to lists of proteins.  Custom functions would have to be written into the framework to scrape context for other domains.  Once this is done however it is relatively easy to change the system prompt for creation of the RAFT-ready dataset.  Finally, the training process is agnostic to the domain once the dataset has been created.
+2.  **Domain Specificity to Proteomics.**  Our package is currently focused on obtaining context related to lists of proteins.  Custom functions would have to be written into the framework to harvest context for other domains.  Once this is done however it is straightforward to change the system prompt for creation of the RAFT-ready dataset.  Finally, the training process is agnostic to the domain once the dataset has been created.
 
 3. **Dependency Mismatches.**  There are many dependencies in any LLM fine-tuning project, even with good tracking of python dependencies, there will be issues such as CUDA version mismatches, certain package versions not being available on particular operating systems, etc.  For example, to use the public implementation of AlignScore, the package needed to be updated to work with newer versions of PyTorch.
 
