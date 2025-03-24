@@ -154,13 +154,9 @@ Importantly, these results were achieved based on synthetically generated data. 
 
 Our software package allows users to create context for performing RAFT in the proteomics domain given a list of proteins of interest.  We hope this provides an easy-to-use base for researchers to explore the relationships between proteins identified in their experiments and expand the use of RAFT to different domain areas.
 
-<!--- Can we soften this discussion point? Also, what can we discuss that was an improvement?--->
-
 # Acknowledgements
 
-We acknowledge contributions from
-
-<!---Include GenAI investments--->
+The research described herein was funded by the Generative AI for Science, Energy, and Security Science & Technology Investment under the Laboratory Directed Research and Development Program at Pacific Northwest National Laboratory (PNNL), a multiprogram national laboratory operated by Battelle for the U.S. Department of Energy. This work was also supported by the Center for AI and Center for Cloud Computing at PNNL.
 
 # References
 ---
