@@ -42,7 +42,7 @@ web:
 
 .PHONY: batch-train-xl
 batch-train-xl:
-	sbatch bin/train-xl.sh
+	sbatch examples/train-xl.sh
 
 .PHONY: cluster-request
 cluster-request:
