@@ -1,5 +1,9 @@
 # Generating Understanding and Interpretation of Multi-Omics Data with an Automated and Generalizable Pipeline
 
+[DISCLAIMER](./disclaimer.md)
+
+[LICENSE](./license.md)
+
 # Objective
 
 We aim to develop a prototype pipeline that rapidly predicts mechanisms driving disease pathogenesis using multi-omics data, demonstrating feasibility with generative AI for uncovering biological mechanisms based on key features from data harmonization.
