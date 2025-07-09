@@ -1,0 +1,39 @@
+image: docker:latest
+
+services:
+  - docker:dind
+
+variables:
+  GIT_SHA: $CI_COMMIT_SHA
+  JOURNAL: "joss"  # You can change this to "jose" if required
+
+stages:
+  - build
+  - upload
+
+before_script:
+  - docker info
+  - docker pull openjournals/inara:latest
+
+
+build_pdf:
+  stage: build
+  script:
+    - docker run --rm -e GIT_SHA=$GIT_SHA -e JOURNAL=$JOURNAL -v $CI_PROJECT_DIR:/data openjournals/inara:latest -p -o pdf,preprint paper/paper.md
+  artifacts:
+    paths:
+      - paper/paper.pdf
+  only:
+    changes:
+      - paper/**
+      - .gitlab-ci.yml
+
+upload_artifact:
+  stage: upload
+  script:
+    - echo "Uploading artifact..."
+  artifacts:
+    paths:
+      - paper/paper.pdf
+    expire_in: 1 week
+

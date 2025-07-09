@@ -2,8 +2,24 @@
 lib/
 notes/
 untracked/
+output/
+.vscode
 
 !genraitor/data/
+adapters/
+logs/
+results/
+
+examples/*
+!examples/README.md
+!examples/create_context.qmd
+!examples/example-uniprot-api-rag-output.txt
+!examples/example_context_large.txt
+!examples/raft-dataset.py
+!examples/raft-example-io.md
+!examples/run_raft_sbatch.sh
+!examples/slurm.sh
+!examples/uniprot-pubmed-api-rag.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

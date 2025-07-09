@@ -11,18 +11,6 @@ from ..conf import env, log
 # default instructions for the biology domain
 CUSTOM_INSTRUCTIONS = "You are a synthetic question-answer pair generator for the biology domain. Given a chunk of context from biological literature and databases, generate %s example questions a user could ask and would be answered using information from the chunk. For example, if the given context was PubMed abstracts and database entries with information about proteins A, B, and C, example questions could be 'What biological functions do A, B, and C perform?' or 'What, if any, is the nature of the interaction between A, B, and C?'. The questions should be able to be answered in a few sentences or less."
 
-EXAMPLE_UNIPROTS = [
- 'Q9BRJ2',
- 'P09758',
- 'P84085',
- 'P08708',
- 'P46013',
- 'P02768',
- 'P05026',
- 'P14618'
-]
-
-
 @click.group()
 def cli():
     """Retrieval of context for creating a dataset for Retrieval-Augmented Fine-Tuning"""
@@ -57,63 +45,6 @@ def merge(adapter_path, base_model, save_path):
     model.save_pretrained(save_path)
     log.info(f"saved: {save_path}")
 
-@cli.command("raft:context")
-@click.option(
-    "--uniprot_ids",
-    type=str,
-    default=None,
-    help="Path to a file containing a list of uniprot ids to fetch context for with one uniprot id per line as Accession ID's.",
-)
-@click.option(
-    "--postprocess_results",
-    type=bool,
-    default=True,
-    help="Whether to postprocess the results to extract abstracts, interactions, and pathways.",
-)
-@click.option(
-    "--output_dir",
-    type=str,
-    default=".",
-    help="The directory to save the context results to.",
-)
-def context(
-        uniprot_ids,
-        postprocess_results,
-        output_dir
-    ):
-    from genraitor.rag.uniprot_api import fetch_context
-    from genraitor.data.postprocess import postprocess_uniprot
-    import datetime
-
-    if uniprot_ids is not None:
-        with open(uniprot_ids) as f:
-            uniprot_ids = f.read().splitlines()
-    else:
-        log.info(f"No uniprot id file provided, using example uniprot ids: {','.join(EXAMPLE_UNIPROTS)}")
-        uniprot_ids = EXAMPLE_UNIPROTS
-        
-    results = fetch_context(uniprot_ids)
-
-    thetime = datetime.datetime.now().strftime("%Y-%m-%d:%H:%M")
-    out_file = os.path.join(output_dir, f"uniprot_context_results_{thetime}.p")
-
-    log.info(f"Saving context results to {out_file}")
-
-    pickle.dump(
-        results,
-        open(out_file, "wb")
-    )
-
-    if postprocess_results:
-        full_context = postprocess_uniprot(results, uniprot_ids)
-
-        out_file = os.path.join(output_dir, f"uniprot_context_postprocessed_{thetime}.txt")
-        log.info(f"Saving postprocessed context to {out_file}")
-
-        with open(out_file, "w") as f:
-            f.write(full_context)
-
-
 @cli.command("raft:data")
 @click.option(
     "--embed",
@@ -126,6 +57,12 @@ def context(
     type=str,
     default="Alibaba-NLP/gte-large-en-v1.5",
     help="The name of a huggingface embedding model",
+)
+@click.option(
+    "--oai_embed_model",
+    type=str,
+    default=None,
+    help="The name of an OpenAIEmbedding model as enumerated in `llama_index.embeddings.openai.OpenAIEmbeddingModelType`",
 )
 @click.option(
     "--embed_model_cache",
@@ -177,6 +114,7 @@ def context(
 def make_raft_dataset(
     embed,
     hf_embed_model,
+    oai_embed_model,
     embed_model_cache,
     chat_model_name,
     context_path,
@@ -210,9 +148,16 @@ def make_raft_dataset(
 
     # used to semantically segment the document into chunks that will be used as 'documents' to reason over.
     if embed == "cloud":
+        oai_embedding_kwargs = {
+            "api_key": API_KEY,
+            "api_base": api_base
+        }
+
+        if oai_embed_model:
+            oai_embedding_kwargs['model'] = oai_embed_model
+
         embed_model = OpenAIEmbedding(
-            api_key=API_KEY, 
-            api_base=api_base
+            **oai_embedding_kwargs
         )
     elif embed == "local":
         if not os.environ.get("HF_TOKEN"):
@@ -237,7 +182,7 @@ def make_raft_dataset(
 
     if not output_path:
         thetime = datetime.datetime.now().strftime("%Y-%m-%d-%H:%M")
-        output_path = f'raft-dataset-{os.path.basename(os.path.splitext(os.path.basename(context_path))[0])}-{thetime}.hf'
+        output_path = f'raft-dataset-{os.path.basename(os.path.splitext(os.path.basename(context_path))[0])}-{thetime}'
     else:
         output_path = output_path
 

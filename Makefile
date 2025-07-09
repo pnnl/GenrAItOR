@@ -2,8 +2,19 @@ PROJECT="genraitor"
 USER="jens829"
 BASE_MODEL="meta-llama/Meta-Llama-3-8B"
 PYTHON=".venv/bin/python3"
+POOL?="dl_shared"
 
 all:
+
+.PHONY: paper
+paper:
+	docker run --rm -it \
+		-e JOURNAL="joss" \
+		-v ${PWD}:/data \
+		-u $(id -u):$(id -g) \
+		openjournals/inara \
+		-o pdf,crossref \
+		paper/paper.md
 
 .PHONY: train
 train:
@@ -11,18 +22,31 @@ train:
 		--model_name "$(BASE_MODEL)"\
 		--output_name data/finetuned
 
-align:
+train-xl:
+	$(PYTHON) -m $(PROJECT) train:raft \
+		-n data/finetuned-xl \
+		-m "$(BASE_MODEL)"\
+		-t data/training/hf/xlarge.hf
+
+evaluate:
 	$(PYTHON) -m $(PROJECT) eval \
 		--adapter_path data/finetuned \
 		--base_model "$(BASE_MODEL)"\
-		--raft_path "data/training/raft_outputs/raw.jsonl" \
-		--save_path "data/align_scores.parquet"
+		--raft_path "data/training/hf/large.hf" \
+		--save_path "data/align_scores.parquet" \
+		--batch_size 25 
+	#--raft_path "data/training/raft_outputs/raw.jsonl" \
+
 web:
 	cd genraitor/web && npm run dev
 
-.PHONY: cluster-submit
-cluster-submit:
-	salloc -A $(PROJECT) -p dl_shared --gres=gpu:1
+.PHONY: batch-train-xl
+batch-train-xl:
+	sbatch examples/train-xl.sh
+
+.PHONY: cluster-request
+cluster-request:
+	salloc -A $(PROJECT) -p $(POOL) --gres=gpu:1
 
 .PHONY: cluster-check
 cluster-check:

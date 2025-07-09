@@ -44,6 +44,12 @@ class ModelConfig(BaseModel):
     
 class TrainingConfig(BaseModel):
     attention: str = "flash_attention_2"  # or "eager"
+    batch_size: int = 20
+    max_seq_len: int = 8000
+
+
+class EvalConfig(BaseModel):
+    max_tokens: int = 4000
 
 
 class Settings(BaseSettings, VendorConfig):
@@ -51,6 +57,7 @@ class Settings(BaseSettings, VendorConfig):
     paths: PathConfig = PathConfig()
     training: TrainingConfig = TrainingConfig()
     model: ModelConfig = ModelConfig()
+    eval: EvalConfig = EvalConfig()
 
     class Config:
         env_prefix = "GENRAITOR__"
