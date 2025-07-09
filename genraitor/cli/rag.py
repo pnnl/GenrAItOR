@@ -1,8 +1,6 @@
 import click
 from pathlib import Path
 from ..conf import log, env
-from ..models.embedding import EmbedModel
-
 
 @click.group()
 def cli():
@@ -26,8 +24,8 @@ def response_modes():
 @click.option(
     "-e",
     "--embedding_model",
-    default=EmbedModel.LLAMA3_1,
-    type=click.Choice([m.value for m in EmbedModel]),
+    default=env.model.embed_model_names.LLAMA3_1,
+    type=click.Choice([m.value for m in env.model.embed_model_names]),
 )
 @click.option("--reindex", default=False, is_flag=True)
 def rag_run(top_k, response_mode, embedding_model, reindex):

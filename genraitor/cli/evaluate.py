@@ -3,12 +3,8 @@
 from pathlib import Path
 
 import click
-import duckdb
-import pandas as pd
 
-from ..conf import env
-from ..raft import tune
-
+from ..conf import env, log
 
 @click.group()
 def cli():
@@ -19,10 +15,10 @@ def cli():
 @cli.command("eval:init")
 def init():
     """Install nltk dependencies."""
+    import ssl
+
     import nltk
 
-    import ssl
-    
     try:
         _create_unverified_https_context = ssl._create_unverified_context
     except AttributeError:
@@ -37,8 +33,9 @@ def init():
     "-a",
     "--adapter_path",
     "adapter_path",
-    required=True,
-    type=click.Path(file_okay=False, path_type=Path, exists=True),
+    required=False,
+    type=click.Path(file_okay=False, path_type=Path),
+    show_default=True,
 )
 @click.option(
     "-b",
@@ -46,12 +43,14 @@ def init():
     "--base",
     "base_model",
     default=env.model.name,
+    show_default=True,
 )
 @click.option(
     "--raft_path",
     required=True,
     default=Path(env.paths.data) / "training" / "raft_outputs" / "raw.jsonl",
-    type=click.Path(dir_okay=False, exists=True, path_type=Path),
+    type=click.Path(exists=True, path_type=Path),
+    show_default=True,
 )
 @click.option(
     "--save_path",
@@ -60,50 +59,30 @@ def init():
 @click.option("--batch_size", "batch_size", type=int, default=15)
 def evaluate(adapter_path, base_model, raft_path, save_path, batch_size):
     """Run the AlignScore metric."""
-    from alignscore import AlignScore
-    with duckdb.connect(":memory:") as conn:
-        data = conn.sql(f"""
-            SELECT
-                context || instruction || question as context
-                ,cot_answer as claim
-            FROM read_json("{raft_path}")
-        """).to_df()
-    claims = data["claim"].to_list()[:batch_size]
-    contexts = data["context"].to_list()[:batch_size]
+    import pandas as pd
 
+    from ..evaluate import align
+    from ..raft import train
 
-    tokenizer, model = tune.load(
-        adapter_path=adapter_path,
+    data = align.load(raft_path)
+    tokenizer, model = train.load(
         base_model=base_model,
+        adapter_path=None,
     )
-    model.eval()
-
-    device = model.device
-    tokenizer.pad_token = tokenizer.eos_token
-    inputs = tokenizer(contexts, return_tensors="pt", padding=True)
-    ids = inputs["input_ids"].to(device)
-
-    outputs = model.generate(input_ids=ids, max_new_tokens=150, pad_token_id=tokenizer.pad_token_id)
-    pred_claims = tokenizer.batch_decode(outputs.detach().cpu().numpy(), skip_special_tokens=True)
-
-
-    scorer = AlignScore(
-        model="roberta-base",
-        batch_size=32,
-        device=device,
-        ckpt_path=str(Path(env.paths.app) / "data/alignscore/AlignScore-base.ckpt"),
-        evaluation_mode="nli_sp",
+    base_result = align.evaluate(
+        model=model, tokenizer=tokenizer, data=data, batch_size=batch_size
     )
-    scores = scorer.score(contexts=contexts, claims=pred_claims)
-    pred_scores = pd.DataFrame(scores, columns=["align_score"])
-    pred_scores["dataset"] = "pred"
+    base_result["model"] = "base"
 
-    scores = scorer.score(contexts=contexts, claims=claims)
-    eval_scores = pd.DataFrame(scores, columns=["align_score"])
-    eval_scores["dataset"] = "eval"
-
-    result = pd.concat([eval_scores, pred_scores])
-
+    tokenizer, model = train.load(
+        base_model=base_model,
+        adapter_path=adapter_path,
+    )
+    tuned_result = align.evaluate(
+        model=model, tokenizer=tokenizer, data=data, batch_size=batch_size
+    )
+    tuned_result["model"] = "tuned"
+    result = pd.concat([tuned_result, base_result])
     print(result.describe())
     if save_path is None:
         print(result.to_markdown(index=False))

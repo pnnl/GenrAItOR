@@ -1,5 +1,9 @@
 # Generating Understanding and Interpretation of Multi-Omics Data with an Automated and Generalizable Pipeline
 
+[DISCLAIMER](./disclaimer.md)
+
+[LICENSE](./license.md)
+
 # Objective
 
 We aim to develop a prototype pipeline that rapidly predicts mechanisms driving disease pathogenesis using multi-omics data, demonstrating feasibility with generative AI for uncovering biological mechanisms based on key features from data harmonization.
@@ -60,7 +64,51 @@ pip install -e .
 
 # Running The Code
 
+The code is presented as a python package as well as a CLI using the `click` package.  The CLI is invoked by running:
+
+```bash
+python -m genraitor <cli-entrypoint>
+```
+
+Help documentation for each entrypoint can be accessed by running:
+
+```
+python -m genraitor <cli-entrypoint> --help
+```
+
+Some of the main steps in carrying out our fine-tuning procedure and their associated endpoints are described below.
+
 ## Generating Data
+
+Our synthetic data processing pipeline starts with a set of uniprot identifiers you are interested in.  You can collect these beforehand using variable selections methods such as LASSO, or Shapley values.
+
+### Option 1:  From a file of UniProt ID's (Recommended)
+
+Start with a file containing uniprot [Accession numbers](https://www.uniprot.org/help/accession_numbers), one per line, as below:
+
+```
+# data/examples/uniprots.txt
+Q9BRJ2
+P09758
+P84085
+P08708
+P46013
+P02768
+P05026
+P14618
+```
+
+Then provide this file to the `data:context` cli endpoint.  This file will also default to some example uniprot ids when no file is provided.
+
+```bash
+python -m genraitor data:context \
+--uniprot_ids=./data/examples/uniprots.txt \
+--output_dir=./data
+```
+
+This will produce two files in `./data`, one (`uniprot_context_results...`) with the raw results of querying uniprot for pathway information and abstracts, and the other (`uniprot_context_postprocessed...`) with context derived from those results and usable by the `RAFTDatasetPack` class from `llama-index`.
+
+### Option 2:  From a file with scores:
 
 To generate the top uniprot ids (the directory `data/deepimv` should exist and contain a .csv file starting with 'shap', and containing 'AH1' and 'pro'):
 
@@ -91,6 +139,55 @@ To generate documents for usage in a RAG model:
 # to save as json files:
 python3 -m genraitor data:rag --uniprot_path data/training/uniprot.parquet --save_path data/training/rag/documents
 
+```
+
+## RAFT Dataset
+Once you have used the above to create a text file of context, you can use our modified `RAFTDatasetPack` class to create synthetic question-answer pairs about chunks of that context.
+
+You will need an OpenAI API key as well as a huggingface API key.  The entrypoint for the cli is `raft:data`, or there is an example script at `examples/raft-dataset.py`.
+
+To run from the cli do:
+
+```bash
+# set keys
+export HF_TOKEN=<your-hf-token>
+export OPENAI_API_KEY=<your-oai-key>
+
+python -m genraitor raft:data \
+--embed local \
+--context_path /path/to/context.txt \
+--output_path /path/to/raft_data
+```
+
+See `python -m raft:data --help` for more options.  The resulting huggingface dataset is a folder of files and can be loaded as below:
+
+```python
+from datasets import load_from_disk
+
+dataset = load_from_disk('/path/to/raft_data')
+```
+
+## Performing RAFT
+
+Once we have created the dataset suitable for performing RAFT, we simply point the cli target for training it to the dataset on disk.  The cli target also takes a model name to be passed to the huggingface `AutoModelForCausalLM.from_pretrained` method as well as an output path.  For certain models, such as the Llama series, you will again need a huggingface api key and have accepted the terms of service on their model page.
+
+```bash
+python -m genraitor train:raft \
+-t /path/to/raft_data \
+-m meta-llama/Meta-Llama-3.1-8B \
+-n data/finetuned
+```
+
+The fine-tuned model will be saved in data/finetuned and loadable via the huggingface interface:
+
+```python
+from transformers import (
+    AutoModelForCausalLM,
+    AutoTokenizer
+)
+
+tokenizer = AutoTokenizer.from_pretrained('./data/finetuned', padding_side="left")
+model = AutoModelForCausalLM.from_pretrained("./data/finetuned")
 ```
 
 ## RAG Model Inference
@@ -224,20 +321,6 @@ Another class of training techniques use Reinforcement Learning (often called [R
 
 According to a recent blog post, the RLHF technique finetuning with [odds ratio preference optimization algorithm (ORPO)](https://arxiv.org/abs/2403.07691) works with as little as 50 unique prompts.
 There is a [TRL HuggingFace package](https://huggingface.co/docs/trl/en/orpo_trainer) that implements this technique.
-
-# Dataset
-
-## DeepIMV
-
-
-## UniProt
-
-We will focus on a single dataset to start: Proteins from [UniProt](https://www.uniprot.org/)
-
-## PubMed
-
-## LipidMaps
-
 
 # Fine Tuning
 

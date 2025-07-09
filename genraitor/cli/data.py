@@ -4,15 +4,82 @@ from pprint import pprint
 
 import click
 import pandas as pd
+import os
+import pickle
 
 from ..conf import env, log
 
+EXAMPLE_UNIPROTS = [
+ 'Q9BRJ2',
+ 'P09758',
+ 'P84085',
+ 'P08708',
+ 'P46013',
+ 'P02768',
+ 'P05026',
+ 'P14618'
+]
 
 @click.group()
 def cli():
     """dataset:group."""
     pass
 
+@cli.command("data:context")
+@click.option(
+    "--uniprot_ids",
+    type=str,
+    default=None,
+    help="Path to a file containing a list of uniprot ids to fetch context for with one uniprot id per line as Accession ID's.",
+)
+@click.option(
+    "--postprocess_results",
+    type=bool,
+    default=True,
+    help="Whether to postprocess the results to extract abstracts, interactions, and pathways.",
+)
+@click.option(
+    "--output_dir",
+    type=str,
+    default=".",
+    help="The directory to save the context results to.",
+)
+def context(
+        uniprot_ids,
+        postprocess_results,
+        output_dir
+    ):
+    from genraitor.rag.uniprot_api import fetch_context
+    from genraitor.data.postprocess import postprocess_uniprot
+    import datetime
+
+    if uniprot_ids is not None:
+        with open(uniprot_ids) as f:
+            uniprot_ids = f.read().splitlines()
+    else:
+        log.info(f"No uniprot id file provided, using example uniprot ids: {','.join(EXAMPLE_UNIPROTS)}")
+        uniprot_ids = EXAMPLE_UNIPROTS
+        
+    results = fetch_context(uniprot_ids)
+
+    thetime = datetime.datetime.now().strftime("%Y-%m-%d:%H:%M")
+    out_file = os.path.join(output_dir, f"uniprot_context_results_{thetime}.p")
+
+    log.info(f"Saving context results to {out_file}")
+
+    pickle.dump(
+        results,
+        open(out_file, "wb")
+    )
+
+    if postprocess_results:
+        full_context = postprocess_uniprot(results, uniprot_ids)
+
+        out_file = os.path.join(output_dir, f"uniprot_context_postprocessed_{thetime}.txt")
+        log.info(f"Saving postprocessed context to {out_file}")
+
+        with open(out_file, "w") as f:
+            f.write(full_context)
 
 @cli.command("data:uniprot")
 @click.option(

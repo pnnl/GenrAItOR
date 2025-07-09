@@ -1,51 +1,20 @@
 """."""
+
 from pathlib import Path
 
 import click
+import os
+import pickle
 
 from ..conf import env, log
-from ..raft.strategies import TrainingStrategy
 
+# default instructions for the biology domain
+CUSTOM_INSTRUCTIONS = "You are a synthetic question-answer pair generator for the biology domain. Given a chunk of context from biological literature and databases, generate %s example questions a user could ask and would be answered using information from the chunk. For example, if the given context was PubMed abstracts and database entries with information about proteins A, B, and C, example questions could be 'What biological functions do A, B, and C perform?' or 'What, if any, is the nature of the interaction between A, B, and C?'. The questions should be able to be answered in a few sentences or less."
 
 @click.group()
 def cli():
-    """."""
+    """Retrieval of context for creating a dataset for Retrieval-Augmented Fine-Tuning"""
     pass
-
-
-@cli.command("raft:tune")
-@click.option(
-    "-t",
-    "--training_path",
-    "training_path",
-    required=True,
-    default=Path(env.paths.data) / "training_dataset.jsonl",
-    type=click.Path(dir_okay=False, path_type=Path, exists=True),
-)
-@click.option(
-    "-m", "--model_name", "--model", default="meta-llama/Meta-Llama-3-8B", help="HF model to use as the base",
-)
-@click.option("-n", "--output_name", default="data/finetuned", help="Output path for the adapter weights.")
-@click.option(
-    "-",
-    "--strategy",
-    default="sft",
-    type=click.Choice(TrainingStrategy.list()),
-    show_choices=True,
-    show_default=True,
-    help="TRL trainer to use",
-)
-def tune(training_path, model_name, output_name, strategy):
-    """Tune llm using generated raft dataset."""
-    from ..raft import tune
-
-    strategy = TrainingStrategy.from_str(strategy)
-    tune.main(
-        training_path=training_path,
-        base_model=model_name,
-        new_model=output_name,
-        strategy=strategy,
-    )
 
 
 @cli.command("raft:merge")
@@ -66,9 +35,9 @@ def tune(training_path, model_name, output_name, strategy):
 @click.option("-o", "--output_path", "--save_path", "save_path", default="genraitor")
 def merge(adapter_path, base_model, save_path):
     """Merge the trained model with the base model."""
-    from ..raft import tune
+    from ..raft import train
 
-    model = tune.load(
+    model = train.load(
         adapter_path=adapter_path,
         base_model=base_model,
     )
@@ -76,37 +45,160 @@ def merge(adapter_path, base_model, save_path):
     model.save_pretrained(save_path)
     log.info(f"saved: {save_path}")
 
-
-
 @cli.command("raft:data")
 @click.option(
-    "-o",
-    "--output_path",
-    "save_path",
-    required=True,
-    default=Path(env.paths.data) / "training" / "raft_outputs",
-    type=click.Path(file_okay=False, path_type=Path),
+    "--embed",
+    type=click.Choice(["cloud", "local"]),
+    default="cloud",
+    help="One of either 'cloud' or 'local'.  If 'cloud' then uses the llama-index interface to the OpenAI.  If 'local', then using the HuggingFaceLLM llama-index wrapper for huggingface models.",
 )
-def dataset_raft(save_path):
-    """Generate raft training dataset from uniprot documents."""
-    from llama_index.embeddings.ollama import OllamaEmbedding
-    from llama_index.llms.ollama import Ollama
+@click.option(
+    "--hf_embed_model",
+    type=str,
+    default="Alibaba-NLP/gte-large-en-v1.5",
+    help="The name of a huggingface embedding model",
+)
+@click.option(
+    "--oai_embed_model",
+    type=str,
+    default=None,
+    help="The name of an OpenAIEmbedding model as enumerated in `llama_index.embeddings.openai.OpenAIEmbeddingModelType`",
+)
+@click.option(
+    "--embed_model_cache",
+    type=str,
+    default="/qfs/projects/genraitor/models/cache",
+    help="Cache directory for huggingface models from llama-index",
+)
+@click.option(
+    "--chat_model_name",
+    type=str,
+    default="gpt-4o",
+    help="The name of the language model to use for completions.  Defaults to 'gpt-4o' and probably won't work with other models.",
+)
+@click.option(
+    "--context_path",
+    type=str,
+    default="context.txt",
+    help="The path to a text file containing the context to be chunked and used to generate QA pairs.",
+)
+@click.option(
+    "--output_path",
+    type=str,
+    default="raft-dataset.hf",
+    help="The path to save the huggingface dataset produced by the raft output",
+)
+@click.option(
+    "--save_chunks_path",
+    type=str,
+    help="A path to a checkpoint to load chunks from if it exists, or save to if not.",
+)
+@click.option(
+    "--oai_key",
+    type=str,
+    default=None,
+    help="The path to a file with a single line containing the OpenAI api key.  Alternatively set OPENAI_API_KEY environment variable.",
+)
+@click.option(
+    "--hf_token",
+    type=str,
+    default=None,
+    help="The path to a file with a single line containing a huggingface access token.  Alternatively set HF_TOKEN environment variable.",
+)
+@click.option(
+    "--api_base",
+    type=str,
+    default="https://ai-incubator-api.pnnl.gov",
+    help="The base URL for the OpenAI API.",
+)
+def make_raft_dataset(
+    embed,
+    hf_embed_model,
+    oai_embed_model,
+    embed_model_cache,
+    chat_model_name,
+    context_path,
+    output_path,
+    save_chunks_path,
+    oai_key,
+    hf_token,
+    api_base
+):
+    from llama_index.llms.openai import OpenAI
+    from llama_index.embeddings.openai import OpenAIEmbedding
+    from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 
-    from ..data.raft_dataset import RAFTDatasetPack
+    import datetime
 
-    log.info(f"loading: {env.paths.rag_data}")
-    llm = Ollama(model="llama3.1", request_timeout=120)
-    embed_model = OllamaEmbedding(
-        model_name="llama3.1",
-        base_url="http://localhost:11434",
-        ollama_additional_kwargs={"mirostat": 0, "request_timeout": 120},
+    from genraitor.data.raft_dataset import RAFTDatasetPack
+
+    if not os.environ.get("OPENAI_API_KEY"):
+        assert os.path.exists(oai_key), "OPENAI_API_KEY not set and file provided by `--oai_key` does not exist"
+        with open(oai_key) as f:
+            API_KEY=f.readline().strip("\n")
+    else:
+        API_KEY = os.environ.get("OPENAI_API_KEY")
+
+    # Used to generate questions and answers about the text content
+    llm = OpenAI(
+        model=chat_model_name,
+        api_key=API_KEY,
+        api_base=api_base
     )
-    raft_dataset = RAFTDatasetPack(env.paths.rag_data, llm=llm, embed_model=embed_model)
-    dataset = raft_dataset.run()
 
-    assert save_path.parent.exists(), f"{save_path} parent not found"
-    # Save as .arrow format
-    dataset.save_to_disk(save_path)
+    # used to semantically segment the document into chunks that will be used as 'documents' to reason over.
+    if embed == "cloud":
+        oai_embedding_kwargs = {
+            "api_key": API_KEY,
+            "api_base": api_base
+        }
 
-    # Save as .jsonl format
-    dataset.to_json((save_path / "raw").with_suffix(".jsonl"))
+        if oai_embed_model:
+            oai_embedding_kwargs['model'] = oai_embed_model
+
+        embed_model = OpenAIEmbedding(
+            **oai_embedding_kwargs
+        )
+    elif embed == "local":
+        if not os.environ.get("HF_TOKEN"):
+            if hf_token:
+                with open(hf_token) as f:
+                    os.environ["HF_TOKEN"] = f.readline().strip("\n")
+            
+        # Defaulting to some embedding model from HF for this.
+        embed_model = HuggingFaceEmbedding(
+            model_name = hf_embed_model, 
+            cache_folder = embed_model_cache,
+            trust_remote_code = True,
+            # model_kwargs = {"device_map":"auto"}
+        )
+
+    raft_dataset = RAFTDatasetPack(
+        instruction_template = CUSTOM_INSTRUCTIONS,
+        file_path = context_path, 
+        llm = llm, 
+        embed_model=embed_model
+    )
+
+    if not output_path:
+        thetime = datetime.datetime.now().strftime("%Y-%m-%d-%H:%M")
+        output_path = f'raft-dataset-{os.path.basename(os.path.splitext(os.path.basename(context_path))[0])}-{thetime}'
+    else:
+        output_path = output_path
+
+    log.info(f"Beginning raft dataset construction, writing to: {output_path}")
+
+    chunks = None
+
+    if save_chunks_path:
+        if os.path.exists(save_chunks_path):
+            chunks = pickle.load(open(save_chunks_path, 'rb'))
+
+    # a raft dataset in huggingface format
+    dataset = raft_dataset.run(
+        checkpoint_path = output_path,
+        chunks = chunks,
+        save_chunks_path=save_chunks_path    
+    )
+
+    dataset.save_to_disk(output_path)
