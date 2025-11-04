@@ -31,7 +31,7 @@ bibliography: refs.bib
 
 # Summary
 
-We present software to fine-tune Llama 3, a large language model (LLM), using Retrieval Augmented Fine-Tuning (RAFT) on proteomics-related literature. The software, organized as a command-line interface (CLI), simplifies the fine-tuning process. The resulting model answers biomolecule-related queries, leveraging biological context (e.g., reaction pathways or protein functions).
+We present software to fine-tune Llama 3 using Retrieval Augmented Fine-Tuning (RAFT) on proteomics literature. The package includes a command-line interface (CLI) that simplifies the fine-tuning process. The resulting model answers biomolecule-related queries using biological context.
 
 Advances in LLMs enhance human-dependent tasks like interpreting biomolecule sets identified as important for model predictions. Domain experts can query an LLM for biological insights and draw inferences contextualized by the LLM's knowledge.  Most LLMs are general-purpose, trained on broad datasets like social media. These lack the domain-specific language needed for ‘omics queries. Our work uses RAFT [@zhang_raft_2024] to adapt an open-source LLM into an AI-assistant for domain experts. RAFT fine-tunes models by including irrelevant context in question-answer tasks, making them more robust than traditional retrieval-augmented generation (RAG) systems [@zhang_raft_2024]. We provide a CLI to perform RAFT, from data collection to training, enabling researchers to create their own AI-assistants for biological research.
 
@@ -39,7 +39,7 @@ Advances in LLMs enhance human-dependent tasks like interpreting biomolecule set
 
 # Statement of Need
 
-RAFT has demonstrated as large as a 30% absolute increase in performance over standard fine-tuning and RAG approaches [@zhang_raft_2024]. However, RAFT involves multiple steps, dependencies, and code modifications, creating barriers for researchers. Our software provides an easy-to-use CLI for implementing RAFT in proteomics, serves as a template for other ‘omics research, and organizes the required dependencies.
+RAFT has shown up to 30% performance gains over standard fine-tuning and RAG [@zhang_raft_2024]. However, implementing RAFT presents many technical barriers for researchers. Our software offers an easy-to-use package for performing RAFT in proteomics and serves as a template for extending RAFT capabilities to other areas of molecular biology.
 
 An overview of our development of a RAFT model is provided by [Figure 1](#fig:workflow).  The general steps are:
 
@@ -54,7 +54,7 @@ We evaluated RAFT-Llama 3 against base Llama 3 using AlignScore [@zha_alignscore
 
 # Example Implementation
 
-The process is encapsulated in a Python package with a command-line interface.  Our first step is to retrieve context in the form of article abstracts and information about protein-protein interactions and associated pathways, starting with a list of protein identifiers (accession numbers) in `data/examples/uniprots.txt`:
+The process is encapsulated in a Python package with a command-line interface.  First, we retrieve context in the form of article abstracts and information about protein-protein interactions and associated pathways, starting with a list of protein identifiers in `data/examples/uniprots.txt`:
 
 ```bash
 python -m genraitor data:context \
@@ -130,13 +130,13 @@ These results suggest RAFT marginally improves response quality. Additionally, o
 
 # Discussion/Limitations
 
-Some challenges and limitations remain, including:
+Some challenges remain:
 
-1. **Resource Challenges.** Large context chunks strained GPU memory, requiring us to limit the generated context size. Long training times required careful checkpointing/monitoring.
-2. **Specificity to Proteomics.** The package is focused on protein-related context. Custom functions are needed for other biomolecules/contexts, but the training process is domain-agnostic once datasets are prepared.
-3. **Dependency Issues.** LLM fine-tuning involves many dependencies, leading to version mismatches (e.g., CUDA, PyTorch).
+1. **Resources** Large context chunks strained GPU memory, requiring limitation of context size.
+2. **Proteomics focus.** The package focuses on proteomics; adapting to other biomolecules requires custom code, though training is domain-agnostic once data are ready.
+3. **Dependencies.** Fine-tuning involves many dependencies, risking version mismatches (e.g., CUDA, PyTorch).
 
-Our work found that RAFT showed marginal improvement in AlignScore over base Llama-3 on a QA task in the biology domain.  While this lags the more significant improvements in the original publication, we do not believe this invalidates the RAFT method, as our evaluation is limited compared to the original authors'.  Specifically, we rely on a single metric from another model (AlignScore) for evaluation based on unverified synthetic data which may need more careful curation, e.g. involving verification by biological experts.
+RAFT showed marginal AlignScore improvement over base Llama-3 on our QA task. This likely reflects our limited evaluation: a single metric (AlignScore) on synthetic data that could benefit from expert curation.
 
 Our software package allows users to create context for performing RAFT in the proteomics domain given a list of proteins of interest.  We hope this provides an easy-to-use base for researchers to explore the relationships between proteins identified in their experiments and expand the use of RAFT to different domain areas.
 
