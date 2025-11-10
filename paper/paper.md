@@ -112,7 +112,7 @@ Commands are configurable via flags or environment variables. Use `--help` for o
 python3 -m genraitor train:raft --help
 ```
 
-In addition to unifying data processing, model training, and result evaluation, this effort extended the Python package `llama-index` [@liu_llamaindex_2022] by:
+In addition to unifying data processing, model training, and result evaluation, this effort extended the Python package `llama-index` [@llamaindex] by:
 
 - Allowing configurable system prompts for generating questions.
 - Modifying the `get_chunks` method to respect the `chunk_size` argument, optimizing text length for training.

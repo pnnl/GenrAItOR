@@ -3,6 +3,8 @@
 [DISCLAIMER](./disclaimer.md)
 
 [LICENSE](./license.md)
+ 
+[CONTRIBUTING](./CONTRIBUTING.md)
 
 # Objective
 
