@@ -62,7 +62,7 @@ python -m genraitor data:context \
 --output_dir=./data
 ```
 
-This will produce two files in `./data`, one (`uniprot_context_results...`) with the raw results of querying UniProt for pathway information and abstracts, and the other (`uniprot_context_postprocessed...`) with context derived from those results and usable by the `RAFTDatasetPack` class from `llama-index`.
+This will produce two files in `./data`, one (`uniprot_context_results...`) with the raw results of querying UniProt for pathway information and abstracts, and the other (`uniprot_context_postprocessed...`) with context derived from those results and usable by the `RAFTDatasetPack` class from `llama-index`[@liu_llamaindex_2022].
 
 To create synthetic question-answer pairs from this context, use the CLI with an OpenAI API key and optionally a Hugging Face API key:
 
@@ -112,7 +112,7 @@ Commands are configurable via flags or environment variables. Use `--help` for o
 python3 -m genraitor train:raft --help
 ```
 
-In addition to unifying data processing, model training, and result evaluation, this effort extended the Python package `llama-index` [@llamaindex] by:
+In addition to unifying data processing, model training, and result evaluation, this effort extended the Python package `llama-index` by:
 
 - Allowing configurable system prompts for generating questions.
 - Modifying the `get_chunks` method to respect the `chunk_size` argument, optimizing text length for training.
