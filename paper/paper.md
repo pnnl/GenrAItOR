@@ -62,7 +62,7 @@ python -m genraitor data:context \
 --output_dir=./data
 ```
 
-This will produce two files in `./data`, one (`uniprot_context_results...`) with the raw results of querying UniProt for pathway information and abstracts, and the other (`uniprot_context_postprocessed...`) with context derived from those results and usable by the `RAFTDatasetPack` class from `llama-index`[@liu_llamaindex_2022].
+This will produce two files in `./data`, one (`uniprot_context_results...`) with the raw results of querying UniProt for pathway information and abstracts, and the other (`uniprot_context_postprocessed...`) with context derived from those results and usable by the `RAFTDatasetPack` class from the `llama-index` Python package [@liu_llamaindex_2022].
 
 To create synthetic question-answer pairs from this context, use the CLI with an OpenAI API key and optionally a Hugging Face API key:
 
