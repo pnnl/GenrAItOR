@@ -718,7 +718,7 @@ unidecode==1.3.8
     # via metapub
 uri-template==1.3.0
     # via jsonschema
-urllib3==2.2.2
+urllib3==2.8.0
     # via requests
 wcwidth==0.2.13
     # via prompt-toolkit
