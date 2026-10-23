@@ -338,7 +338,7 @@ mypy-extensions==1.0.0
     # via typing-inspect
 nbclient==0.10.0
     # via nbconvert
-nbconvert==7.16.4
+nbconvert==7.17.2
     # via jupyter-server
 nbformat==5.10.4
     # via
