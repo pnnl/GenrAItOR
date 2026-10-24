@@ -582,7 +582,7 @@ send2trash==1.8.3
     # via jupyter-server
 sentence-transformers==3.0.1
     # via llama-index-embeddings-huggingface
-setuptools==74.1.2
+setuptools==84.1.0
     # via
     #   genraitor (pyproject.toml)
     #   jupyterlab
