@@ -324,7 +324,7 @@ metapub==0.5.12
     # via genraitor (pyproject.toml)
 minijinja==2.2.0
     # via huggingface-hub
-mistune==3.0.2
+mistune==3.3.3
     # via nbconvert
 mpmath==1.3.0
     # via sympy
