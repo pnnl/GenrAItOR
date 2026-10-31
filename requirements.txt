@@ -495,7 +495,7 @@ pygments==2.18.0
     #   ipython
     #   nbconvert
     #   rich
-pypdf==4.3.1
+pypdf==6.21.4
     # via llama-index-readers-file
 python-dateutil==2.9.0.post0
     # via
