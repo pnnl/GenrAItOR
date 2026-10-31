@@ -646,7 +646,7 @@ torch==2.4.1
     #   peft
     #   sentence-transformers
     #   trl
-tornado==6.4.1
+tornado==6.6
     # via
     #   ipykernel
     #   jupyter-client
