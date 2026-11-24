@@ -312,7 +312,7 @@ markupsafe==2.1.5
     # via
     #   jinja2
     #   nbconvert
-marshmallow==3.22.0
+marshmallow==3.26.2
     # via dataclasses-json
 matplotlib-inline==0.1.7
     # via
