@@ -47,7 +47,7 @@ biopython==1.84
     # via genraitor (pyproject.toml)
 bitsandbytes==0.42.0
     # via genraitor (pyproject.toml)
-bleach==6.1.0
+bleach==6.4.0
     # via nbconvert
 certifi==2024.8.30
     # via
