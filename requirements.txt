@@ -49,7 +49,7 @@ bitsandbytes==0.42.0
     # via genraitor (pyproject.toml)
 bleach==6.1.0
     # via nbconvert
-certifi==2024.8.30
+certifi==2026.10.18
     # via
     #   httpcore
     #   httpx
