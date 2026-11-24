@@ -360,7 +360,7 @@ nltk==3.9.1
     #   llama-index
     #   llama-index-core
     #   llama-index-legacy
-notebook==7.2.2
+notebook==7.6.3
     # via genraitor (pyproject.toml)
 notebook-shim==0.2.4
     # via
