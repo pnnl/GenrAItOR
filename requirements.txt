@@ -246,7 +246,7 @@ llama-index-agent-openai==0.3.0
     #   llama-index-program-openai
 llama-index-cli==0.3.0
     # via llama-index
-llama-index-core==0.11.6
+llama-index-core==0.13.0
     # via
     #   llama-index
     #   llama-index-agent-openai
