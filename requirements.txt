@@ -100,7 +100,7 @@ docopt==0.6.2
     # via metapub
 docstring-parser==0.16
     # via tyro
-duckdb==1.0.0
+duckdb==1.1.0
     # via genraitor (pyproject.toml)
 einops==0.8.1
     # via flash-attn
