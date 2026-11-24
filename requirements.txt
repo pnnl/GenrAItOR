@@ -299,7 +299,7 @@ llama-index-readers-llama-parse==0.3.0
     # via llama-index
 llama-parse==0.5.2
     # via llama-index-readers-llama-parse
-lxml==5.3.0
+lxml==6.1.0
     # via
     #   eutils
     #   lxml-html-clean
