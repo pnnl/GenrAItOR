@@ -502,7 +502,7 @@ python-dateutil==2.9.0.post0
     #   arrow
     #   jupyter-client
     #   pandas
-python-dotenv==1.0.1
+python-dotenv==1.2.2
     # via pydantic-settings
 python-json-logger==2.0.7
     # via jupyter-events
