@@ -237,7 +237,7 @@ levenshtein==0.25.1
     # via python-levenshtein
 llama-cloud==0.0.17
     # via llama-index-indices-managed-llama-cloud
-llama-index==0.11.6
+llama-index==0.13.0
     # via genraitor (pyproject.toml)
 llama-index-agent-openai==0.3.0
     # via
